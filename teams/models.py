@@ -9,7 +9,7 @@ class Team(models.Model):
     country = models.ForeignKey(Country, on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.naçme
+        return self.name
 
 class Player(models.Model):
     external_id = models.CharField(max_length=20)  # Id in external data provider
