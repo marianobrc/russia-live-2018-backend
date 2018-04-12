@@ -11,6 +11,7 @@ class Team(models.Model):
     def __str__(self):
         return self.name
 
+
 class Player(models.Model):
     external_id = models.CharField(max_length=20)  # Id in external data provider
     team = models.ForeignKey(Team, on_delete=models.CASCADE)

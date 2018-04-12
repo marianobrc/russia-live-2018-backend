@@ -22,6 +22,7 @@ class Match(models.Model):
         (FINISHED,  'Finished'),
     )
     status = models.CharField(max_length=20, choices=MATCH_STATUSES, default=NOT_STARTED)
+    is_live = models.BooleanField(default=False)
     team1 = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="team1")
     team2 = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="team2")
     team1_score = models.PositiveIntegerField(null=True)
