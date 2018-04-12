@@ -39,6 +39,19 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 ]
 
+OTHER_APPS = [
+    'rest_framework',
+]
+
+PROJECT_APPS = [
+    'competitions',
+    'countries',
+    'matches',
+    'teams',
+]
+
+INSTALLED_APPS = INSTALLED_APPS + OTHER_APPS + PROJECT_APPS
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
