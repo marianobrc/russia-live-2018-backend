@@ -20,7 +20,7 @@ class Player(models.Model):
     last_name = models.CharField(max_length=50)
     nationality = models.ForeignKey(Country, on_delete=models.CASCADE, null=True)
     position = models.CharField(max_length=50, blank=True)
-    birthdate = models.DateField(blank=True)
+    birthdate = models.DateField(blank=True, null=True)
 
     def __str__(self):
         return self.common_name

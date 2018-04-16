@@ -15,8 +15,9 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from .views import MatchesListAPIView
+from .views import MatchesListAPIView, MatchDetailsAPIView
 
 urlpatterns = [
-    path('', MatchesListAPIView.as_view(), name='home')
+    path('', MatchesListAPIView.as_view(), name='matches_list'),
+    path('<int:pk>/', MatchDetailsAPIView.as_view(), name='matches_details')
 ]

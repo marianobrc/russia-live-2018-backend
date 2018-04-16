@@ -30,19 +30,21 @@ class Match(models.Model):
     team2_score = models.PositiveIntegerField(null=True)
 
     def __str__(self):
-        return "{} {} - {} {} : {}".format(
-            self.team1.name, self.team1_score, self.team2.name, self.team2_score, self.status
+        return "ID {}, {} {} : {} {} - {}".format(
+            self.id, self.team1.name, self.team1_score,  self.team2_score, self.team2.name, self.status
         )
 
 
 class MatchEvent(models.Model):
     external_id = models.CharField(max_length=20)  # Id in external data provider
-    match = models.ForeignKey(Match, on_delete=models.CASCADE)
+    match = models.ForeignKey(Match, related_name='events', on_delete=models.CASCADE)
+    team = models.ForeignKey(Match, related_name='team', on_delete=models.CASCADE, null=True)
     event_type = models.CharField(max_length=30)
     minute = models.PositiveIntegerField()
     extra_minute = models.PositiveIntegerField()
     player = models.ForeignKey(Player, on_delete=models.CASCADE)
     description = models.CharField(max_length=255, blank=True)
+
 
     def __str__(self):
         return "{} {} {}".format(self.minute, self.event_type, self.player.common_name)
