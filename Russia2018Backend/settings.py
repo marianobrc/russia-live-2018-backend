@@ -41,6 +41,7 @@ INSTALLED_APPS = [
 
 OTHER_APPS = [
     'rest_framework',
+    'django_filters',
 ]
 
 PROJECT_APPS = [
@@ -61,6 +62,12 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ),
+}
 
 ROOT_URLCONF = 'Russia2018Backend.urls'
 
