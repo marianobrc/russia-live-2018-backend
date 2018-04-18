@@ -24,6 +24,7 @@ class Match(models.Model):
     )
     status = models.CharField(max_length=20, choices=MATCH_STATUSES, default=NOT_STARTED)
     is_live = models.BooleanField(default=False)
+    minutes = models.PositiveIntegerField(default=0)
     team1 = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="team1")
     team2 = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="team2")
     team1_score = models.PositiveIntegerField(null=True)
@@ -38,13 +39,13 @@ class Match(models.Model):
 class MatchEvent(models.Model):
     external_id = models.CharField(max_length=20)  # Id in external data provider
     match = models.ForeignKey(Match, related_name='events', on_delete=models.CASCADE)
-    team = models.ForeignKey(Match, related_name='team', on_delete=models.CASCADE, null=True)
+    team = models.ForeignKey(Team, related_name='team', on_delete=models.CASCADE, null=True)
     event_type = models.CharField(max_length=30)
     minute = models.PositiveIntegerField()
     extra_minute = models.PositiveIntegerField()
-    player = models.ForeignKey(Player, on_delete=models.CASCADE)
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, null=True, blank=True)
     description = models.CharField(max_length=255, blank=True)
-
+    description2 = models.CharField(max_length=255, blank=True)
 
     def __str__(self):
-        return "{} {} {}".format(self.minute, self.event_type, self.player.common_name)
+        return "{} {} {}".format(self.minute, self.event_type, self.player)
