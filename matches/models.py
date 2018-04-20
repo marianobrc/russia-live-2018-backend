@@ -10,11 +10,11 @@ class Match(models.Model):
     date = models.DateTimeField()
     stadium = models.CharField(max_length=255, blank=True)
     # Status can be used to filter between live matches, upcoming matches and old matches
-    NOT_STARTED = 'NS' # Not started yet
+    NOT_STARTED = 'NS'  # Not started yet
     PLAYING_FT = 'FT'  # First Time
     HALFTIME = 'HT'  # Half Time
     PLAYING_ST = 'ST'  # Second Time
-    FINISHED = 'FN' # Finished
+    FINISHED = 'FN'  # Finished
     MATCH_STATUSES = (
         (NOT_STARTED, 'Not started yet'),
         (PLAYING_FT,   'Playing First Time'),
