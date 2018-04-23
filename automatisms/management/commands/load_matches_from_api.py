@@ -14,6 +14,20 @@ API_KEY = "565ec012251f932ea4000001b409351be5874923474525d0fedd7793"
 total_requests = 0
 
 
+def get_datetime_from_dotted_date_and_time(formated_date, time):
+    try:
+        date_list = formated_date.split('.')
+        day = int(date_list[0])
+        month = int(date_list[1])
+        year = int(date_list[2])
+        time_list = time.split(':')
+        hour = int(time_list[0])
+        minute = int(time_list[1])
+        return datetime(year=year, month=month, day=day, hour=hour, minute=minute, second=0)
+    except Exception:
+        return None
+
+
 def get_date_from_dotted_date(formated_date):
     try:
         date_list = formated_date.split('.')
@@ -133,7 +147,7 @@ def create_match_from_json(match_json, create_teams=False, update=False):
         match.external_id = match_ext__id
         match.stage = CompetitionStage.objects.get(name="Groups")
         match.stage_detail = "Group A"
-        match.date = get_date_from_dotted_date(match_json['formatted_date'])
+        match.date = get_datetime_from_dotted_date_and_time(formated_date=match_json['formatted_date'], time=match_json['time'])
         match.stadium = match_json['venue']
         match.team1 = team1
         match.team1_score = match_json['localteam_score']

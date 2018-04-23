@@ -7,7 +7,9 @@ class TeamAdmin(admin.ModelAdmin):
 
 
 class PlayerAdmin(admin.ModelAdmin):
-    pass
+    list_filter = (
+        'team',
+    )
 
 
 admin.site.register(Team, TeamAdmin)

@@ -40,13 +40,51 @@ def get_event_type(api_event_type):
     elif api_event_type == "redcard":
         return "red_card"
     else:
-        return api_event_type
+        return "match_generic"
 
 
 def update_match_events_from_json(match, events_json):
     print("Updating events of match %s .." % match)
     # Add only new events checking external_id
     current_match_event_ids = match.events.all().values_list('external_id', flat=True)
+    if len(current_match_event_ids) == 0:
+        # Add first event, match started
+        new_event = MatchEvent()
+        new_event.external_id = '-1'
+        new_event.match = match
+        new_event.team = match.team1
+        new_event.event_type = 'match_started'
+        new_event.minute = 0
+        new_event.extra_minute = 0
+        new_event.description = "Match Started" # ToDo check when to use it
+        new_event.description2 = ""
+        new_event.save() # Continue processing other events in this case
+    elif match.status == Match.HALFTIME and MatchEvent.objects.filter(match=match, event_type='half_time').count() == 0:
+        new_event = MatchEvent()
+        new_event.external_id = '-1'
+        new_event.match = match
+        new_event.team = match.team1
+        new_event.event_type = 'half_time'
+        new_event.minute = 45 # ToDo: check how to handle minutes in half time
+        new_event.extra_minute = 0
+        new_event.description = "Half Time"  # ToDo check when to use it
+        new_event.description2 = ""
+        new_event.save()
+        return # Don't update more events during half-time
+    elif match.status == Match.FINISHED and MatchEvent.objects.filter(match=match, event_type='match_finished').count() == 0:
+        new_event = MatchEvent()
+        new_event.external_id = '-1'
+        new_event.match = match
+        new_event.team = match.team1
+        new_event.event_type = 'match_finished'
+        new_event.minute = 90  # ToDo: check how to handle minutes in half time
+        new_event.extra_minute = 0
+        new_event.description = "Finished"  # ToDo check when to use it
+        new_event.description2 = ""
+        new_event.save()
+        print("Match %s ..FINISHED -> STOPPED UPDATING." % match)
+        exit(0)
+
     new_events_json = [ev for ev in events_json if ev['id'] not in current_match_event_ids]
     for event_json in new_events_json:
         new_event = MatchEvent()
@@ -116,7 +154,8 @@ class Command(BaseCommand):
                 update_match_status_from_json(match, match_json)
                 events_json = match_json['events']
                 update_match_events_from_json(match, events_json)
-                print("SLEEPING 2 seconds..")
-                sleep(2)
+                print("API Total requests: %s" % total_requests)
+                print("SLEEPING 8 seconds..")
+                sleep(8)
         finally:
             print("Total requests: %s" % total_requests)
