@@ -11,6 +11,7 @@ from countries.models import Country
 
 API_ENDPOINT_URL = "http://api.football-api.com/2.0/"
 API_KEY = "565ec012251f932ea4000001b409351be5874923474525d0fedd7793"
+total_requests = 0
 
 
 def get_date_from_dotted_date(formated_date):
@@ -36,15 +37,20 @@ def get_date_from_spanish_date(formated_date):
 
 
 def create_team_players_from_api(team):
+    global total_requests
     # Get team players from api and create players in DB
     team_ext_id = team.external_id
     print("Fetching team with ext id %s" % team_ext_id)
     request_url = API_ENDPOINT_URL + "team/{}?Authorization={}".format(team_ext_id, API_KEY)
     print(request_url)
     response = requests.get(request_url, verify=False)
+    total_requests += 1
     if response.status_code != 200:
-        print("Error status: %s" % response.status_code)
-        exit(1)
+        print("Error status: %s, %s" % (response.status_code, response.json()))
+        if response.status_code == 429:
+            print("API LIMIT EXCEEDED: Total requests: %s" % total_requests)
+            sleep(30)  # Slow down
+        return
     print("Creating players ..")
     squad_json = response.json()['squad']
     for p in squad_json:
@@ -53,8 +59,12 @@ def create_team_players_from_api(team):
         request_url = API_ENDPOINT_URL + "player/{}?Authorization={}".format(player_ext_id, API_KEY)
         print(request_url)
         response = requests.get(request_url, verify=False)
+        total_requests += 1
         if response.status_code != 200:
-            print("Error status: %s" % response.status_code)
+            print("Error status: %s, %s" % (response.status_code, response.json()))
+            if response.status_code == 429:
+                print("API LIMIT EXCEEDED: Total requests: %s" % total_requests)
+                sleep(30)  # Slow down
             continue
         p_json = response.json()
         # Save player in DB
@@ -72,6 +82,7 @@ def create_team_players_from_api(team):
 
 
 def create_match_from_json(match_json, create_teams=False, update=False):
+    global total_requests
     try:
         match_ext__id = match_json['id']
         match = Match.objects.get(external_id=match_ext__id)
@@ -152,6 +163,7 @@ class Command(BaseCommand):
 
 
     def handle(self, *args, **options):
+        global total_requests
         try:
             #comp_id = options['comp_id']
             match_id = options['match_id']
@@ -159,21 +171,28 @@ class Command(BaseCommand):
             update = options['update']
         except Exception as e:
             print("Error parsing parameters %s" % e)
-
-        if match_id != 'all':
-            print("Fetching match with id %s" % match_id)
-            request_url = API_ENDPOINT_URL + "matches/{}?Authorization={}".format(match_id, API_KEY)
-            print(request_url)
-            response = requests.get(request_url, verify=False)
-            if response.status_code != 200:
-                print("Error status: %s" % response.status_code)
-                exit(1)
-            match_json = response.json()
-            create_match_from_json(match_json=match_json, create_teams=create_teams, update=update)
-
+            exit(1)
         else:
-            print("Fetching all matches in teh competition. UNINPLEMENTED")
-            exit(0)
+            if match_id != 'all':
+                print("Fetching match with id %s" % match_id)
+                request_url = API_ENDPOINT_URL + "matches/{}?Authorization={}".format(match_id, API_KEY)
+                print(request_url)
+                response = requests.get(request_url, verify=False)
+                total_requests += 1
+                if response.status_code != 200:
+                    print("Error status: %s, %s" % (response.status_code, response.json()))
+                    if response.status_code == 429:
+                        print("API LIMIT EXCEEDED: Total requests: %s" % total_requests)
+                        sleep(30) # Slow down
+                    exit(1)
+                match_json = response.json()
+                create_match_from_json(match_json=match_json, create_teams=create_teams, update=update)
+
+            else:
+                print("Fetching all matches in teh competition. UNINPLEMENTED")
+                exit(0)
+        finally:
+            print("Total requests: %s" % total_requests)
 
 
 

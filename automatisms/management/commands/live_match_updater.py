@@ -6,6 +6,7 @@ from teams.models import Player
 
 API_ENDPOINT_URL = "http://api.football-api.com/2.0/"
 API_KEY = "565ec012251f932ea4000001b409351be5874923474525d0fedd7793"
+total_requests = 0
 
 
 def get_match_status(api_match_status):
@@ -22,7 +23,7 @@ def update_match_status_from_json(match, match_json):
     # Team 1 is always local and Team 2 is always visitor
     match.status = get_match_status(api_match_status=match_json['status'])
     if match_json['timer'] != "":
-        match.minutes = int(match_json['timer'])
+        match.minutes = int(match_json['timer'].replace('+', ''))  # In extra time a plus sign appears
     match.team1_score = match_json['localteam_score']
     match.team2_score = match_json['visitorteam_score']
     match.save()
@@ -80,34 +81,42 @@ class Command(BaseCommand):
 
 
     def handle(self, *args, **options):
+        global total_requests
         try:
             match_id = options['match_id']
             set_live = options['set_live']
         except Exception as e:
             print("Error %s" % e)
             exit(1)
-        try:
-            match = Match.objects.get(id=match_id)
-        except Match.DoesNotExist:
-            print("Match with ID %s not found " % match_id)
-            exit(1)
-
-        if set_live:
-            match.is_live = True
-            match.save()
-
-        # Get match data and keep track
-        while True:
-            print("Fetching match with ID %s -> external id %s" % (match.id, match.external_id))
-            request_url = API_ENDPOINT_URL + "matches/{}?Authorization={}".format(match.external_id, API_KEY)
-            print(request_url)
-            response = requests.get(request_url, verify=False)
-            if response.status_code != 200:
-                print("Error status: %s" % response.status_code)
+        else:
+            try:
+                match = Match.objects.get(id=match_id)
+            except Match.DoesNotExist:
+                print("Match with ID %s not found " % match_id)
                 exit(1)
-            match_json = response.json()
-            update_match_status_from_json(match, match_json)
-            events_json = match_json['events']
-            update_match_events_from_json(match, events_json)
-            print("SLEEPING 2 seconds..")
-            sleep(2)
+
+            if set_live:
+                match.is_live = True
+                match.save()
+
+            # Get match data and keep track
+            while True:
+                print("Fetching match with ID %s -> external id %s" % (match.id, match.external_id))
+                request_url = API_ENDPOINT_URL + "matches/{}?Authorization={}".format(match.external_id, API_KEY)
+                print(request_url)
+                response = requests.get(request_url, verify=False)
+                total_requests += 1
+                if response.status_code != 200:
+                    print("Error status: %s, %s" % (response.status_code, response.json()))
+                    if response.status_code == 429:
+                        print("API LIMIT EXCEEDED: Total requests: %s" % total_requests)
+                        sleep(30) # Slow down
+                    continue  # retry
+                match_json = response.json()
+                update_match_status_from_json(match, match_json)
+                events_json = match_json['events']
+                update_match_events_from_json(match, events_json)
+                print("SLEEPING 2 seconds..")
+                sleep(2)
+        finally:
+            print("Total requests: %s" % total_requests)
