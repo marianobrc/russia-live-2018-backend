@@ -79,23 +79,34 @@ def create_team_players_from_api(team):
             if response.status_code == 429:
                 print("API LIMIT EXCEEDED: Total requests: %s" % total_requests)
                 sleep(30)  # Slow down
-            continue
-        p_json = response.json()
-        # Save player in DB
-        player = Player.objects.create(
-            external_id=player_ext_id,
-            team=team,
-            common_name=p_json['common_name'],
-            first_name=p_json['firstname'],
-            last_name=p_json['lastname'],
-            nationality=None, # ToDo map to countries
-            position=p_json['position'],
-            birthdate=get_date_from_spanish_date(p_json['birthdate']),
-        )
+                continue
+            # Make player with avalilable data
+            player = Player.objects.create(
+                external_id=player_ext_id,
+                team=team,
+                common_name=p['name'],
+                first_name=p['name'],
+                last_name="",
+                nationality=None,  # ToDo map to countries
+                position=p['position'],
+            )
+        else:
+            p_json = response.json()
+            # Save player in DB
+            player = Player.objects.create(
+                external_id=player_ext_id,
+                team=team,
+                common_name=p_json['common_name'],
+                first_name=p_json['firstname'],
+                last_name=p_json['lastname'],
+                nationality=None, # ToDo map to countries
+                position=p_json['position'],
+                birthdate=get_date_from_spanish_date(p_json['birthdate']),
+            )
         print("New player added: '%s'" % player)
 
 
-def create_match_from_json(match_json, create_teams=False, update=False):
+def create_match_from_json(match_json, create_teams=False, update=False, set_live=False):
     global total_requests
     try:
         match_ext__id = match_json['id']
@@ -112,7 +123,7 @@ def create_match_from_json(match_json, create_teams=False, update=False):
                 team1 = Team.objects.create(
                     external_id=team1_ext_id,
                     name=match_json['localteam_name'],
-                    country=Country.objects.get(code_iso3='arg'), # ToDo change it once we have real data
+                    country=Country.objects.get(code_iso3='bra'), # ToDo change it once we have real data
                 )
                 create_team_players_from_api(team=team1)
 
@@ -132,7 +143,7 @@ def create_match_from_json(match_json, create_teams=False, update=False):
                 team2 = Team.objects.create(
                     external_id=team2_ext_id,
                     name=match_json['visitorteam_name'],
-                    country=Country.objects.get(code_iso3='col'),  # ToDo change it once we have real data
+                    country=Country.objects.get(code_iso3='kor'),  # ToDo change it once we have real data
                 )
                 create_team_players_from_api(team2)
             else:
@@ -153,6 +164,7 @@ def create_match_from_json(match_json, create_teams=False, update=False):
         match.team1_score = match_json['localteam_score']
         match.team2 = team2
         match.team2_score = match_json['visitorteam_score']
+        match.is_live = set_live
         match.save()
     else:
         if update:
@@ -172,9 +184,9 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         #parser.add_argument('--comp', dest='comp_id', help='specify bar name')
         parser.add_argument('--match', dest='match_id', help='specify latitude')
-        parser.add_argument('--create_teams', dest='create_teams', required=False, action='store_true')
+        parser.add_argument('--create-teams', dest='create_teams', required=False, action='store_true')
         parser.add_argument('--update', dest='update', required=False, action='store_true')
-
+        parser.add_argument('--set-live', dest='set_live', required=False, action='store_true')
 
     def handle(self, *args, **options):
         global total_requests
@@ -183,6 +195,7 @@ class Command(BaseCommand):
             match_id = options['match_id']
             create_teams = options['create_teams']
             update = options['update']
+            set_live = options['set_live']
         except Exception as e:
             print("Error parsing parameters %s" % e)
             exit(1)
@@ -200,7 +213,7 @@ class Command(BaseCommand):
                         sleep(30) # Slow down
                     exit(1)
                 match_json = response.json()
-                create_match_from_json(match_json=match_json, create_teams=create_teams, update=update)
+                create_match_from_json(match_json=match_json, create_teams=create_teams, update=update, set_live=set_live)
 
             else:
                 print("Fetching all matches in teh competition. UNINPLEMENTED")

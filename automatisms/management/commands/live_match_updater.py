@@ -28,6 +28,7 @@ def update_match_status_from_json(match, match_json):
     match.team2_score = match_json['visitorteam_score']
     match.save()
     print("Updating score of match %s ..DONE" % match)
+    return match
 
 
 def get_event_type(api_event_type):
@@ -52,22 +53,22 @@ def update_match_events_from_json(match, events_json):
         new_event = MatchEvent()
         new_event.external_id = '-1'
         new_event.match = match
-        new_event.team = match.team1
+        new_event.team = match.team2
         new_event.event_type = 'match_started'
         new_event.minute = 0
         new_event.extra_minute = 0
-        new_event.description = "Match Started" # ToDo check when to use it
+        new_event.description = "Match Started"
         new_event.description2 = ""
         new_event.save() # Continue processing other events in this case
     elif match.status == Match.HALFTIME and MatchEvent.objects.filter(match=match, event_type='half_time').count() == 0:
         new_event = MatchEvent()
         new_event.external_id = '-1'
         new_event.match = match
-        new_event.team = match.team1
+        new_event.team = match.team2
         new_event.event_type = 'half_time'
         new_event.minute = 45 # ToDo: check how to handle minutes in half time
         new_event.extra_minute = 0
-        new_event.description = "Half Time"  # ToDo check when to use it
+        new_event.description = "Half Time"
         new_event.description2 = ""
         new_event.save()
         return # Don't update more events during half-time
@@ -75,7 +76,7 @@ def update_match_events_from_json(match, events_json):
         new_event = MatchEvent()
         new_event.external_id = '-1'
         new_event.match = match
-        new_event.team = match.team1
+        new_event.team = match.team2
         new_event.event_type = 'match_finished'
         new_event.minute = 90  # ToDo: check how to handle minutes in half time
         new_event.extra_minute = 0
@@ -151,7 +152,7 @@ class Command(BaseCommand):
                         sleep(30) # Slow down
                     continue  # retry
                 match_json = response.json()
-                update_match_status_from_json(match, match_json)
+                match = update_match_status_from_json(match, match_json)
                 events_json = match_json['events']
                 update_match_events_from_json(match, events_json)
                 print("API Total requests: %s" % total_requests)
