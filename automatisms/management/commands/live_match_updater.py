@@ -9,11 +9,13 @@ API_KEY = "565ec012251f932ea4000001b409351be5874923474525d0fedd7793"
 total_requests = 0
 
 
-def get_match_status(api_match_status):
+def get_match_status(api_match_status, timer):
     if api_match_status == "FT":
         return Match.FINISHED
     elif api_match_status == "HT":
         return Match.HALFTIME
+    elif timer == "":
+        return Match.NOT_STARTED
     else:
         return Match.PLAYING_FT  # ToDo unify playing status
 
@@ -21,11 +23,11 @@ def get_match_status(api_match_status):
 def update_match_status_from_json(match, match_json):
     print("Updating score of match %s .." % match)
     # Team 1 is always local and Team 2 is always visitor
-    match.status = get_match_status(api_match_status=match_json['status'])
+    match.status = get_match_status(api_match_status=match_json['status'], timer=match_json['timer'])
     if match_json['timer'] != "":
         match.minutes = int(match_json['timer'].replace('+', ''))  # In extra time a plus sign appears
-    match.team1_score = match_json['localteam_score']
-    match.team2_score = match_json['visitorteam_score']
+    match.team1_score = match_json['localteam_score'].replace('?', '0')
+    match.team2_score = match_json['visitorteam_score'].replace('?', '0')
     match.save()
     print("Updating score of match %s ..DONE" % match)
     return match
@@ -48,7 +50,7 @@ def update_match_events_from_json(match, events_json):
     print("Updating events of match %s .." % match)
     # Add only new events checking external_id
     current_match_event_ids = match.events.all().values_list('external_id', flat=True)
-    if len(current_match_event_ids) == 0:
+    if len(current_match_event_ids) == 0 and match.status != Match.NOT_STARTED:
         # Add first event, match started
         new_event = MatchEvent()
         new_event.external_id = '-1'

@@ -123,7 +123,7 @@ def create_match_from_json(match_json, create_teams=False, update=False, set_liv
                 team1 = Team.objects.create(
                     external_id=team1_ext_id,
                     name=match_json['localteam_name'],
-                    country=Country.objects.get(code_iso3='bra'), # ToDo change it once we have real data
+                    country=Country.objects.get(code_iso3='eng'), # ToDo change it once we have real data
                 )
                 create_team_players_from_api(team=team1)
 
@@ -143,7 +143,7 @@ def create_match_from_json(match_json, create_teams=False, update=False, set_liv
                 team2 = Team.objects.create(
                     external_id=team2_ext_id,
                     name=match_json['visitorteam_name'],
-                    country=Country.objects.get(code_iso3='kor'),  # ToDo change it once we have real data
+                    country=Country.objects.get(code_iso3='fra'),  # ToDo change it once we have real data
                 )
                 create_team_players_from_api(team2)
             else:
@@ -161,9 +161,9 @@ def create_match_from_json(match_json, create_teams=False, update=False, set_liv
         match.date = get_datetime_from_dotted_date_and_time(formated_date=match_json['formatted_date'], time=match_json['time'])
         match.stadium = match_json['venue']
         match.team1 = team1
-        match.team1_score = match_json['localteam_score']
+        match.team1_score = match_json['localteam_score'].replace('?', '0').replace('', '0')
         match.team2 = team2
-        match.team2_score = match_json['visitorteam_score']
+        match.team2_score = match_json['visitorteam_score'].replace('?', '0').replace('', '0')
         match.is_live = set_live
         match.save()
     else:
