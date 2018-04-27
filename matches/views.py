@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from django_filters import rest_framework as filters
 from rest_framework.filters import OrderingFilter
