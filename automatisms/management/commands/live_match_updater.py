@@ -80,7 +80,7 @@ def update_match_events_from_json(match, events_json):
         new_event.match = match
         new_event.team = match.team2
         new_event.event_type = 'match_finished'
-        new_event.minute = 90  # ToDo: check how to handle minutes in half time
+        new_event.minute = 100  # ToDo: check how to handle minutes in half time
         new_event.extra_minute = 0
         new_event.description = "Finished"  # ToDo check when to use it
         new_event.description2 = ""
@@ -90,17 +90,46 @@ def update_match_events_from_json(match, events_json):
 
     new_events_json = [ev for ev in events_json if ev['id'] not in current_match_event_ids]
     for event_json in new_events_json:
+        if event_json['player_id'] == "" or event_json['player'] == "":
+            print("API ERROR: Player data missing, retry later..")
+            return # Abort and retry in some seconds, results are not complete yet
+        team = match.team2 if event_json['team'] == 'visitorteam' else match.team1
         new_event = MatchEvent()
         new_event.external_id = event_json['id']
         new_event.match = match
-        new_event.team = match.team2 if event_json['team'] == 'visitorteam' else match.team1
+        new_event.team = team
         new_event.event_type = get_event_type(api_event_type=event_json['type'])
         new_event.minute = int(event_json['minute']) if event_json['minute'] != "" else 0
         new_event.extra_minute = int(event_json['extra_min']) if event_json['extra_min'] != "" else 0
         try:
             player = Player.objects.get(external_id=event_json['player_id'])
         except Exception:
-            player = None
+            player_fullname = event_json['player'].replace("&apos;", "'")
+            print("Creating missing player: %s" % player_fullname)
+            # Make player with avalilable data
+            try:  # Shorten names
+                common_name_split = player_fullname.split()
+                first_name = common_name_split[0]
+                first_name_initial = first_name[0]
+                surname = common_name_split[1]
+                if len(surname) > 8:
+                    surname = surname[:8] + "."  # Limit surname to 8 chars
+                shortened_name = "{}. {}".format(first_name_initial, surname)
+            except Exception:
+                shortened_name = player_fullname
+                first_name = player_fullname
+                surname = ""
+            # Create the new player
+            new_player = Player.objects.create(
+                external_id=event_json['player_id'],
+                team=team,
+                common_name=shortened_name,
+                first_name=first_name,
+                last_name=surname,
+                nationality=None,  # ToDo map to countries
+                position="",
+            )
+            player = new_player
         new_event.player = player
         new_event.description = "" # ToDo check when to use it
         new_event.description2 = event_json["assist"] if new_event.event_type == 'player_change' else ""
@@ -142,23 +171,28 @@ class Command(BaseCommand):
 
             # Get match data and keep track
             while True:
-                print("Fetching match with ID %s -> external id %s" % (match.id, match.external_id))
-                request_url = API_ENDPOINT_URL + "matches/{}?Authorization={}".format(match.external_id, API_KEY)
-                print(request_url)
-                response = requests.get(request_url, verify=False)
-                total_requests += 1
-                if response.status_code != 200:
-                    print("Error status: %s, %s" % (response.status_code, response.json()))
-                    if response.status_code == 429:
-                        print("API LIMIT EXCEEDED: Total requests: %s" % total_requests)
-                        sleep(30) # Slow down
-                    continue  # retry
-                match_json = response.json()
-                match = update_match_status_from_json(match, match_json)
-                events_json = match_json['events']
-                update_match_events_from_json(match, events_json)
+                try:
+                    print("Fetching match with ID %s -> external id %s" % (match.id, match.external_id))
+                    request_url = API_ENDPOINT_URL + "matches/{}?Authorization={}".format(match.external_id, API_KEY)
+                    print(request_url)
+                    response = requests.get(request_url, verify=False, timeout=10)
+                    total_requests += 1
+                    if response.status_code != 200:
+                        print("Error status: %s, %s" % (response.status_code, response.json()))
+                        if response.status_code == 429:
+                            print("API LIMIT EXCEEDED: Total requests: %s" % total_requests)
+                            sleep(30) # Slow down
+                        continue  # retry
+                    match_json = response.json()
+                    match = update_match_status_from_json(match, match_json)
+                    events_json = match_json['events']
+                    update_match_events_from_json(match, events_json)
+                except Exception:
+                    print("REQUEST ERROR, RETRYING..")
+                    sleep(1)
+                    continue
                 print("API Total requests: %s" % total_requests)
-                print("SLEEPING 8 seconds..")
-                sleep(8)
+                print("SLEEPING 10 seconds..")
+                sleep(10)
         finally:
             print("Total requests: %s" % total_requests)

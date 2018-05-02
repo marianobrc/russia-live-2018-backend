@@ -57,8 +57,14 @@ def create_team_players_from_api(team):
     print("Fetching team with ext id %s" % team_ext_id)
     request_url = API_ENDPOINT_URL + "team/{}?Authorization={}".format(team_ext_id, API_KEY)
     print(request_url)
-    response = requests.get(request_url, verify=False)
-    total_requests += 1
+    try:
+        response = requests.get(request_url, verify=False, timeout=10)
+        total_requests += 1
+    except Exception:
+        print("REQUEST ERROR, RETRYING..")
+        sleep(1)
+        response = requests.get(request_url, verify=False, timeout=10)
+        total_requests += 1
     if response.status_code != 200:
         print("Error status: %s, %s" % (response.status_code, response.json()))
         if response.status_code == 429:
@@ -72,8 +78,14 @@ def create_team_players_from_api(team):
         print("Fetching player with ext id %s" % player_ext_id)
         request_url = API_ENDPOINT_URL + "player/{}?Authorization={}".format(player_ext_id, API_KEY)
         print(request_url)
-        response = requests.get(request_url, verify=False)
-        total_requests += 1
+        try:
+            response = requests.get(request_url, verify=False, timeout=10)
+            total_requests += 1
+        except Exception:
+            print("REQUEST ERROR, RETRYING..")
+            sleep(1)
+            response = requests.get(request_url, verify=False, timeout=10)
+            total_requests += 1
         if response.status_code != 200:
             print("Error status: %s, %s" % (response.status_code, response.json()))
             if response.status_code == 429:
@@ -81,22 +93,45 @@ def create_team_players_from_api(team):
                 sleep(30)  # Slow down
                 continue
             # Make player with avalilable data
+            try:  # Shorten names
+                common_name_split = p['name'].replace("&apos;", "'").split()
+                first_name = common_name_split[0]
+                first_name_initial = first_name[0]
+                surname = common_name_split[1]
+                if len(surname) > 8:
+                    surname = surname[:8] + "."  # Limit surname to 8 chars
+                shortened_name = "{}. {}".format(first_name_initial, surname)
+            except Exception:
+                shortened_name = p['name']
+                first_name = p['name']
+                surname = ""
             player = Player.objects.create(
                 external_id=player_ext_id,
                 team=team,
-                common_name=p['name'],
-                first_name=p['name'],
-                last_name="",
+                common_name=shortened_name,
+                first_name=first_name,
+                last_name=surname,
                 nationality=None,  # ToDo map to countries
                 position=p['position'],
             )
         else:
             p_json = response.json()
             # Save player in DB
+            try:  # Shorten names
+                common_name_split = p_json['common_name'].replace("&apos;", "'").split()
+                first_name_initial = common_name_split[0][0]
+                surname = common_name_split[1]
+                if len(surname) > 8:
+                    surname = surname[:8] + "."  # Limit surname to 8 chars
+                shortened_name = "{}. {}".format(first_name_initial, surname)
+            except Exception:
+                shortened_name = p_json['common_name']
+                first_name = p_json['common_name']
+                surname = ""
             player = Player.objects.create(
                 external_id=player_ext_id,
                 team=team,
-                common_name=p_json['common_name'],
+                common_name=shortened_name,
                 first_name=p_json['firstname'],
                 last_name=p_json['lastname'],
                 nationality=None, # ToDo map to countries
@@ -123,7 +158,7 @@ def create_match_from_json(match_json, create_teams=False, update=False, set_liv
                 team1 = Team.objects.create(
                     external_id=team1_ext_id,
                     name=match_json['localteam_name'],
-                    country=Country.objects.get(code_iso3='eng'), # ToDo change it once we have real data
+                    country=Country.objects.get(code_iso3='col'), # ToDo change it once we have real data
                 )
                 create_team_players_from_api(team=team1)
 
@@ -143,7 +178,7 @@ def create_match_from_json(match_json, create_teams=False, update=False, set_liv
                 team2 = Team.objects.create(
                     external_id=team2_ext_id,
                     name=match_json['visitorteam_name'],
-                    country=Country.objects.get(code_iso3='fra'),  # ToDo change it once we have real data
+                    country=Country.objects.get(code_iso3='bra'),  # ToDo change it once we have real data
                 )
                 create_team_players_from_api(team2)
             else:
@@ -156,14 +191,14 @@ def create_match_from_json(match_json, create_teams=False, update=False, set_liv
         # Continue creating match
         match = Match()
         match.external_id = match_ext__id
-        match.stage = CompetitionStage.objects.get(name="Groups")
+        match.stage = CompetitionStage.objects.get(name="groups")
         match.stage_detail = "Group A"
         match.date = get_datetime_from_dotted_date_and_time(formated_date=match_json['formatted_date'], time=match_json['time'])
         match.stadium = match_json['venue']
         match.team1 = team1
-        match.team1_score = match_json['localteam_score'].replace('?', '0').replace('', '0')
+        match.team1_score = 0
         match.team2 = team2
-        match.team2_score = match_json['visitorteam_score'].replace('?', '0').replace('', '0')
+        match.team2_score = 0
         match.is_live = set_live
         match.save()
     else:
@@ -204,8 +239,14 @@ class Command(BaseCommand):
                 print("Fetching match with id %s" % match_id)
                 request_url = API_ENDPOINT_URL + "matches/{}?Authorization={}".format(match_id, API_KEY)
                 print(request_url)
-                response = requests.get(request_url, verify=False)
-                total_requests += 1
+                try:
+                    response = requests.get(request_url, verify=False, timeout=10)
+                    total_requests += 1
+                except Exception:
+                    print("REQUEST ERROR, RETRYING..")
+                    sleep(1)
+                    response = requests.get(request_url, verify=False, timeout=10)
+                    total_requests += 1
                 if response.status_code != 200:
                     print("Error status: %s, %s" % (response.status_code, response.json()))
                     if response.status_code == 429:
