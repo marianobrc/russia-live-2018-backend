@@ -9,7 +9,10 @@ class MatchAdmin(admin.ModelAdmin):
     )
 
 class MatchEventAdmin(admin.ModelAdmin):
-    pass
+    list_filter = (
+        'match',
+        'event_type',
+    )
 
 admin.site.register(Match, MatchAdmin)
 admin.site.register(MatchEvent, MatchEventAdmin)
