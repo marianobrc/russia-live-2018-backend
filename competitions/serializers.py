@@ -8,7 +8,7 @@ class StandingSerializer(serializers.ModelSerializer):
         model = Standing
         fields = (
             'id', 'stage', 'sub_group', 'team', 'position',
-            'played', 'won', 'drawn', 'lost', 'goal_difference', 'points',
+            'played', 'won', 'drawn', 'lost', 'goal_difference', 'points', 'is_playing',
         )
         depth = 2
 

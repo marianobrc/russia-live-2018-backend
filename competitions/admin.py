@@ -12,7 +12,7 @@ class CompetitionStageAdmin(admin.ModelAdmin):
 
 class StandingAdmin(admin.ModelAdmin):
     list_display = (
-        'stage', 'sub_group', 'position', 'team',
+        'stage', 'sub_group', 'position', 'team', 'is_playing',
         'played', 'won', 'drawn', 'lost', 'goal_difference', 'points',
     )
 
