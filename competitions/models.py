@@ -37,8 +37,8 @@ class Standing(models.Model):
 
     class Meta:
         unique_together = (
-            ("team", "stage", ),  # One team can be only once in each stage, ie once in groups stage, one in quarters
-            ("team", "stage", "sub_group", "position",)  # Cant be two teams in the same position in Group A
+            ("team", "stage", "sub_group", ),  # One team can be only once in each stage, ie once in groups stage, one in quarters
+            ("sub_group", "position",)  # Cant be two teams in the same position in Group A
         )
 
     def __str__(self):
