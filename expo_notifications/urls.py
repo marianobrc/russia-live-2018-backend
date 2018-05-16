@@ -14,11 +14,9 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path
+from .views import PushTokenCreateAPIView
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('push/', include('expo_notifications.urls')),
-    path('api/v1/matches/', include('matches.urls')),
-    path('api/v1/competitions/', include('competitions.urls')),
+    path('tokens/', PushTokenCreateAPIView.as_view(), name='push_token')
 ]

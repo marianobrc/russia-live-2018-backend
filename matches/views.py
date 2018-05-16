@@ -9,7 +9,7 @@ class MatchesListAPIView(ListAPIView):
     queryset = Match.objects.all()
     serializer_class = MatchSerializer
     filter_backends = (filters.DjangoFilterBackend, OrderingFilter,)
-    filter_fields = ('is_live', 'status', 'date', 'id', )
+    filter_fields = ('is_live', 'status', 'date', 'id', 'stage', 'stage__name', )
     ordering_fields = ('date', 'id', )
 
 

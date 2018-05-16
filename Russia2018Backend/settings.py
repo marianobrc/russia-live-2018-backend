@@ -50,6 +50,7 @@ PROJECT_APPS = [
     'matches',
     'teams',
     'automatisms',
+    'expo_notifications',
 ]
 
 INSTALLED_APPS = INSTALLED_APPS + OTHER_APPS + PROJECT_APPS
