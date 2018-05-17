@@ -3,7 +3,9 @@ from .models import PushToken
 
 
 class PushTokenAdmin(admin.ModelAdmin):
-    pass
+    list_display = (
+        'token', 'active',
+    )
 
 
 admin.site.register(PushToken, PushTokenAdmin)
