@@ -3,6 +3,8 @@ import requests
 from django.core.management.base import BaseCommand
 from matches.models import Match, MatchEvent
 from teams.models import Player
+from expo_notifications.models import PushToken
+from expo_notifications.core import send_push_message_broadcast
 
 API_ENDPOINT_URL = "http://api.football-api.com/2.0/"
 API_KEY = "565ec012251f932ea4000001b409351be5874923474525d0fedd7793"
@@ -48,6 +50,7 @@ def get_event_type(api_event_type):
 
 def update_match_events_from_json(match, events_json):
     print("Updating events of match %s .." % match)
+    device_tokens = [t.token for t in PushToken.objects.filter(active=True)]
     # Add only new events checking external_id
     current_match_event_ids = match.events.all().values_list('external_id', flat=True)
     if len(current_match_event_ids) == 0 and match.status != Match.NOT_STARTED:
@@ -62,6 +65,9 @@ def update_match_events_from_json(match, events_json):
         new_event.description = "Match Started"
         new_event.description2 = ""
         new_event.save() # Continue processing other events in this case
+        title = "Match started"
+        message = "{} vs {}".format(match.team1.country.code_iso3, match.team2.country.code_iso3)
+        send_push_message_broadcast(token_list=device_tokens, title=title, message=message)
     elif match.status == Match.HALFTIME and MatchEvent.objects.filter(match=match, event_type='half_time').count() == 0:
         new_event = MatchEvent()
         new_event.external_id = '-1'
@@ -73,6 +79,10 @@ def update_match_events_from_json(match, events_json):
         new_event.description = "Half Time"
         new_event.description2 = ""
         new_event.save()
+        title = "Half Time"
+        message = "{} {} - {} {}".format(match.team1.country.code_iso3, match.team1_score,
+                                         match.team2_score, match.team2.country.code_iso3)
+        send_push_message_broadcast(token_list=device_tokens, title=title, message=message)
         return # Don't update more events during half-time
     elif match.status == Match.FINISHED and MatchEvent.objects.filter(match=match, event_type='match_finished').count() == 0:
         new_event = MatchEvent()
@@ -85,12 +95,16 @@ def update_match_events_from_json(match, events_json):
         new_event.description = "Finished"  # ToDo check when to use it
         new_event.description2 = ""
         new_event.save()
+        title = "Match ended"
+        message = "{} {} - {} {}".format(match.team1.country.code_iso3, match.team1_score,
+                                         match.team2_score, match.team2.country.code_iso3)
+        send_push_message_broadcast(token_list=device_tokens, title=title, message=message)
         print("Match %s ..FINISHED -> STOPPED UPDATING." % match)
         exit(0)
 
     new_events_json = [ev for ev in events_json if ev['id'] not in current_match_event_ids]
     for event_json in new_events_json:
-        if event_json['player_id'] == "" or event_json['player'] == "":
+        if event_json['player_id'] == "" and event_json['player'] == "":
             print("API ERROR: Player data missing, retry later..")
             return # Abort and retry in some seconds, results are not complete yet
         team = match.team2 if event_json['team'] == 'visitorteam' else match.team1
@@ -135,6 +149,13 @@ def update_match_events_from_json(match, events_json):
         new_event.description2 = event_json["assist"] if new_event.event_type == 'player_change' else ""
         new_event.save()
         print("New event saved:  %s" % new_event)
+        # Notify goals
+        if new_event.event_type == 'goal':
+            title = "Goal! {}".format(new_event.team.country.code_iso3.upper())
+            message = "{} {} - {} {}".format(match.team1.country.code_iso3, match.team1_score,
+                                             match.team2_score, match.team2.country.code_iso3)
+            send_push_message_broadcast(token_list=device_tokens, title=title, message=message)
+
     print("Updating events of match %s ..DONE" % match)
 
 

@@ -40,6 +40,7 @@ def send_push_message(token, title, message, extra=None):
 
 def send_push_message_broadcast(token_list, title, message, extra=None):
     # Prepare list of messages
+    print("[send_push_message_broadcast]> Gathering tokens list..")
     push_messages = list()
     for token in token_list:
         push_messages.append(
@@ -47,11 +48,14 @@ def send_push_message_broadcast(token_list, title, message, extra=None):
                 to=token,
                 title=title,
                 body=message,
+                priority="high",
+                sound="default",
                 data=extra
             )
         )
 
     try:
+        print("[send_push_message_broadcast]> Sending push notifications..")
         response = PushClient().publish_multiple(push_messages=push_messages)
     except PushServerError as exc:
         # Encountered some likely formatting/validation error.
@@ -61,15 +65,16 @@ def send_push_message_broadcast(token_list, title, message, extra=None):
         # case it is transient.
         raise exc
 
-    try:
-        # We got a response back, but we don't know whether it's an error yet.
-        # This call raises errors so we can handle them with normal exception
-        # flows.
-        response.validate_response()
-    except DeviceNotRegisteredError:
-        # Mark the push token as inactive
-        from .models import PushToken
-        PushToken.objects.filter(token=token).update(active=False)
-    except PushResponseError as exc:
-        # Encountered some other per-notification error.
-        raise exc
+    # We got a response back, but we don't know whether it's an error yet.
+    # This call raises errors so we can handle them with normal exception
+    # flows.
+    for answer in response:
+        try:
+            answer.validate_response()
+        except DeviceNotRegisteredError:
+            # Mark the push token as inactive
+            from .models import PushToken
+            PushToken.objects.filter(token=answer.push_message[0]).update(active=False)
+        except PushResponseError as exc:
+            # Encountered some other per-notification error.
+            raise exc

@@ -158,7 +158,7 @@ def create_match_from_json(match_json, create_teams=False, update=False, set_liv
                 team1 = Team.objects.create(
                     external_id=team1_ext_id,
                     name=match_json['localteam_name'],
-                    country=Country.objects.get(code_iso3='col'), # ToDo change it once we have real data
+                    country=Country.objects.get(code_iso3='rus'), # ToDo change it once we have real data
                 )
                 create_team_players_from_api(team=team1)
 
@@ -178,7 +178,7 @@ def create_match_from_json(match_json, create_teams=False, update=False, set_liv
                 team2 = Team.objects.create(
                     external_id=team2_ext_id,
                     name=match_json['visitorteam_name'],
-                    country=Country.objects.get(code_iso3='bra'),  # ToDo change it once we have real data
+                    country=Country.objects.get(code_iso3='deu'),  # ToDo change it once we have real data
                 )
                 create_team_players_from_api(team2)
             else:
