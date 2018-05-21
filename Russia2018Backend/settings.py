@@ -42,6 +42,7 @@ INSTALLED_APPS = [
 OTHER_APPS = [
     'rest_framework',
     'django_filters',
+    'rest_framework_api_key',
 ]
 
 PROJECT_APPS = [
@@ -60,10 +61,17 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    'rest_framework_api_key.middleware.APIKeyMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# Exclude Api-Key header check
+API_KEY_MIDDLEWARE_EXCLUDED_URL_PREFIXES = (
+    '/admin',
+    '/api',
+)
 
 REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': (
@@ -144,3 +152,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.0/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = "/home/russ/staticfiles/"
+
+STATICFILES_FINDERS = (
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+)
