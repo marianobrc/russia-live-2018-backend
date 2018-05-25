@@ -49,3 +49,12 @@ class MatchEvent(models.Model):
 
     def __str__(self):
         return "{} {} {}".format(self.minute, self.event_type, self.player)
+
+
+class MatchStats(models.Model):
+    match = models.ForeignKey(Match, related_name='match_stats', on_delete=models.CASCADE)
+    team = models.ForeignKey(Team, related_name='team_stats', on_delete=models.CASCADE)
+    possession = models.PositiveIntegerField(default=0)
+
+    def __str__(self):
+        return "{} -> {}: {}%".format(self.match, self.team, self.possession)

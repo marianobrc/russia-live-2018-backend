@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from teams.serializers import PlayerSerializer
-from .models import Match, MatchEvent
+from .models import Match, MatchEvent, MatchStats
 
 
 class MatchSerializer(serializers.ModelSerializer):
@@ -26,19 +26,32 @@ class MatchEventSerializer(serializers.ModelSerializer):
         )
 
 
+class MatchStatsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MatchStats
+        fields = (
+            'team', 'match', 'possession',
+        )
+
+
 class MatchDetailSerializer(serializers.ModelSerializer):
     events = serializers.SerializerMethodField()
+    stats = serializers.SerializerMethodField()
 
     def get_events(self, obj): # Return last event first
          ordered_queryset = obj.events.all().order_by('-minute')
          return MatchEventSerializer(ordered_queryset, many=True, read_only=True, context=self.context).data
+
+    def get_stats(self, obj): # Return last event first
+         queryset = obj.match_stats.all()
+         return MatchStatsSerializer(queryset, many=True, read_only=True, context=self.context).data
 
     class Meta:
         model = Match
         fields = (
             'id', 'stage', 'stage_detail', 'date', 'stadium', 'minutes', 'status',
             'is_live', 'team1', 'team2', 'team1_score', 'team2_score',
-            'events',
+            'events', 'stats',
         )
         depth = 2
 
