@@ -226,8 +226,7 @@ class Command(BaseCommand):
                     request_url = API_ENDPOINT_URL + "fixtures/{}?api_token={}&include=localTeam,visitorTeam,venue,lineup,events,stats,group,stage".format(
                         match_id, API_KEY)
                 else:
-                    request_url = API_ENDPOINT_URL + "livescores/{}?api_token={}&include=localTeam,visitorTeam,venue,lineup,events,stats,group,stage".format(
-                        match_id, API_KEY)
+                    request_url = API_ENDPOINT_URL + "livescores/?api_token={}&include=localTeam,visitorTeam,venue,lineup,events,stats,group,stage".format(API_KEY)
                 print(request_url)
                 try:
                     response = requests.get(request_url, verify=False, timeout=10)
@@ -245,7 +244,7 @@ class Command(BaseCommand):
                     continue
 
                 # Check if is single amtch or all
-                if match_id != 'all':
+                if is_old_match:
                     live_matches_json = [ response.json()['data'] ]
                 else:
                     live_matches_json = response.json()['data']
