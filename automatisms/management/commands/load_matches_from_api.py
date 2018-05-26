@@ -5,7 +5,7 @@ from datetime import datetime
 import requests
 from django.core.management.base import BaseCommand
 from matches.models import Match
-from competitions.models import CompetitionStage
+from competitions.models import CompetitionStage, Competition
 from teams.models import Team, Player
 from countries.models import Country
 
@@ -14,8 +14,14 @@ API_KEY = "gr33lj1tRZanPATeL1U82l8jVxDxYgenfU9fw2cUI446LEFodUovnCn1skAD"
 total_requests = 0
 
 
-def create_match_from_json(match_json, stage_name, set_live=False):
+def create_match_from_json(match_json, competition_id, stage_name, set_live=False):
     global total_requests
+    try:  # First try to get or create teh country
+        print("Looking for competition with ID %s .." % competition_id)
+        competition = Competition.objects.get(external_id=competition_id)
+    except Exception as e:
+        print("Error Looking for competition with ID %s .." % competition_id)
+        exit(1)
     try:
         match_ext_id = match_json['id']
         print("Processing match with ID %s" % match_ext_id)
@@ -25,7 +31,7 @@ def create_match_from_json(match_json, stage_name, set_live=False):
         try:
             team1_ext_id = match_json['localteam_id']
             print("Looking for team1 ext ID %s.." % team1_ext_id)
-            team1 = Team.objects.get(external_id=team1_ext_id)
+            team1 = Team.objects.get(competition=competition, external_id=team1_ext_id)
         except Team.DoesNotExist:
             print("Team with id %s not found" % team1_ext_id)
             exit(1)
@@ -35,7 +41,7 @@ def create_match_from_json(match_json, stage_name, set_live=False):
         try:
             team2_ext_id = match_json['visitorteam_id']
             print("Looking for team1 ext ID %s.." % team2_ext_id)
-            team2 = Team.objects.get(external_id=team2_ext_id)
+            team2 = Team.objects.get(competition=competition, external_id=team2_ext_id)
         except Team.DoesNotExist:
             print("Team with id %s not found" % team2_ext_id)
             exit(1)
@@ -46,7 +52,7 @@ def create_match_from_json(match_json, stage_name, set_live=False):
         print("Creating new match from json..")
         match = Match()
         match.external_id = match_ext_id
-        match.stage = CompetitionStage.objects.get(name=stage_name)
+        match.stage = CompetitionStage.objects.get(competition=competition, name=stage_name)
         match.stage_detail = match_json['stage']['data']['name'].lower()
         from datetime import datetime
         datetime_str = match_json['time']['starting_at']['date_time']
@@ -73,6 +79,7 @@ class Command(BaseCommand):
     help = 'Load matches from api to database, creating teams and players as needed'
 
     def add_arguments(self, parser):
+        parser.add_argument('--competition', dest='competition_id', required=True, help='Competition EXT ID')
         parser.add_argument('--stage', dest='stage_name', required=True, help='Stage name in DB')
         parser.add_argument('--match', dest='match_id', required=True, help='match id in api')
         parser.add_argument('--from', dest='start_date', required=False, help='Start date')
@@ -82,6 +89,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         global total_requests
         try:
+            competition_id = options['competition_id']
             match_id = options['match_id']
             stage_name = options['stage_name']
             start_date = options['start_date']
@@ -135,7 +143,7 @@ class Command(BaseCommand):
 
             # Create matches
             for match_json in matches_json_list:
-                create_match_from_json(match_json=match_json, stage_name=stage_name, set_live=set_live)
+                create_match_from_json(match_json=match_json, competition_id=competition_id, stage_name=stage_name, set_live=set_live)
 
         finally:
             print("Total requests: %s" % total_requests)

@@ -55,7 +55,7 @@ class Command(BaseCommand):
 
 
     def add_arguments(self, parser):
-        parser.add_argument('--competition', dest='competition_id', required=True, help='Competition ID')
+        parser.add_argument('--competition', dest='competition_id', required=True, help='Competition EXT ID')
         parser.add_argument('--team', dest='team_id', required=True, help='Team id in api')
 
     def handle(self, *args, **options):
