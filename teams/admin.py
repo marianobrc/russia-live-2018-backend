@@ -3,7 +3,7 @@ from .models import Team, Player
 
 
 class TeamAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('competition', 'country', 'external_id',  'name', )
 
 
 class PlayerAdmin(admin.ModelAdmin):
