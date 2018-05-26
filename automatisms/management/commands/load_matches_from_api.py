@@ -19,9 +19,6 @@ def create_match_from_json(match_json, stage_name, set_live=False):
     try:
         match_ext_id = match_json['id']
         print("Processing match with ID %s" % match_ext_id)
-        if Match.objects.filter(external_id=match_ext_id).exists():
-            print("Match with id %s already exists (Skipped)" % match_ext_id)
-            return None
         match = Match.objects.get(external_id=match_ext_id)
     except Match.DoesNotExist:
         # Get or create teams
@@ -77,7 +74,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--stage', dest='stage_name', required=True, help='Stage name in DB')
-        parser.add_argument('--match', dest='match_id', required=False, help='match id in api')
+        parser.add_argument('--match', dest='match_id', required=True, help='match id in api')
         parser.add_argument('--from', dest='start_date', required=False, help='Start date')
         parser.add_argument('--to', dest='end_date', required=False, help='End date')
         parser.add_argument('--set-live', dest='set_live', required=False, action='store_true')
