@@ -14,47 +14,14 @@ API_KEY = "gr33lj1tRZanPATeL1U82l8jVxDxYgenfU9fw2cUI446LEFodUovnCn1skAD"
 total_requests = 0
 
 
-def get_datetime_from_dotted_date_and_time(formated_date, time):
-    try:
-        date_list = formated_date.split('.')
-        day = int(date_list[0])
-        month = int(date_list[1])
-        year = int(date_list[2])
-        time_list = time.split(':')
-        hour = int(time_list[0])
-        minute = int(time_list[1])
-        return datetime(year=year, month=month, day=day, hour=hour, minute=minute, second=0)
-    except Exception:
-        return None
-
-
-def get_date_from_dotted_date(formated_date):
-    try:
-        date_list = formated_date.split('.')
-        day = int(date_list[0])
-        month = int(date_list[1])
-        year = int(date_list[2])
-        return datetime(year=year, month=month, day=day).date()
-    except Exception:
-        return None
-
-
-def get_date_from_spanish_date(formated_date):
-    try:
-        date_list = formated_date.split('/')
-        day = int(date_list[0])
-        month = int(date_list[1])
-        year = int(date_list[2])
-        return datetime(year=year, month=month, day=day).date()
-    except Exception:
-        return None
-
-
 def create_match_from_json(match_json, stage_name, set_live=False):
     global total_requests
     try:
         match_ext_id = match_json['id']
         print("Processing match with ID %s" % match_ext_id)
+        if Match.objects.filter(external_id=match_ext_id).exists():
+            print("Match with id %s already exists (Skipped)" % match_ext_id)
+            return None
         match = Match.objects.get(external_id=match_ext_id)
     except Match.DoesNotExist:
         # Get or create teams
@@ -78,8 +45,8 @@ def create_match_from_json(match_json, stage_name, set_live=False):
         else:
             print("Team 2 found: %s" % team2)
 
-        print("Creating new match from json..")
         # Continue creating match
+        print("Creating new match from json..")
         match = Match()
         match.external_id = match_ext_id
         match.stage = CompetitionStage.objects.get(name=stage_name)
