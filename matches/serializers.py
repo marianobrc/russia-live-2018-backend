@@ -30,7 +30,8 @@ class MatchStatsSerializer(serializers.ModelSerializer):
     class Meta:
         model = MatchStats
         fields = (
-            'team', 'match', 'possession',
+            'team', 'match', 'possession', 'passes', 'passes_accuracy', 'shots_total', 'shots_ongoal', 'shots_accuracy',
+            'dangerous_attacks', 'courner_kicks', 'free_kicks', 'yellow_cards', 'red_cards', 'substitutions', 'fouls',
         )
 
 
