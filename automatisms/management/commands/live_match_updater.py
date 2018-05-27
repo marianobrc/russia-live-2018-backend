@@ -38,7 +38,6 @@ def update_match_status_from_json(match, match_json):
     return match
 
 def update_match_statistics_from_json(match, stats_json):
-    # TODO: COMPLETE STATS <<<<<<<<<<<<<<<<<<<<<
     print("Updating stats of match %s .." % match)
     # Team 1 is always local and Team 2 is always visitor
     try:
@@ -55,19 +54,23 @@ def update_match_statistics_from_json(match, stats_json):
             except MatchStats.DoesNotExist:
                 team_stats = MatchStats(match=match, team=team)
             finally:
-                team_stats.possession = stat['possessiontime']
-                team_stats.passes = stat['passes']['total']
-                team_stats.passes_accuracy = stat['passes']['accurate']
-                team_stats.shots_total = stat['shots']['total']
-                team_stats.shots_ongoal = stat['shots']['ongoal']
-                team_stats.shots_accuracy = round((float(stat['shots']['ongoal']) / float(stat['shots']['total'])) * 100.0)
-                team_stats.dangerous_attacks = stat['attacks']['dangerous_attacks']
-                team_stats.courner_kicks = stat['corners']
-                team_stats.free_kicks = stat['free_kick']
-                team_stats.yellow_cards = stat['yellowcards']
-                team_stats.red_cards = stat['redcards']
-                team_stats.substitutions = stat['substitutions']
-                team_stats.fouls = stat['fouls']
+                team_stats.possession = stat['possessiontime'] if stat['possessiontime'] is not None else 50
+                team_stats.passes = stat['passes']['total'] if stat['passes']['total'] is not None else 0
+                team_stats.passes_accuracy = stat['passes']['accurate'] if stat['passes']['accurate'] is not None else 100
+                team_stats.shots_total = stat['shots']['total'] if stat['shots']['total'] is not None else 0
+                team_stats.shots_ongoal = stat['shots']['ongoal'] if stat['shots']['ongoal'] is not None else 0
+                if int(stat['shots']['total']) > 0:
+                    shots_accuracy = round((float(stat['shots']['ongoal']) / float(stat['shots']['total'])) * 100.0)
+                else:
+                    shots_accuracy = 100
+                team_stats.shots_accuracy = shots_accuracy
+                team_stats.dangerous_attacks = stat['attacks']['dangerous_attacks'] if stat['attacks']['dangerous_attacks'] is not None else 0
+                team_stats.courner_kicks = stat['corners'] if stat['corners'] is not None else 0
+                team_stats.free_kicks = stat['free_kick'] if stat['free_kick'] is not None else 0
+                team_stats.yellow_cards = stat['yellowcards'] if stat['yellowcards'] is not None else 0
+                team_stats.red_cards = stat['redcards'] if stat['redcards'] is not None else 0
+                team_stats.substitutions = stat['substitutions'] if stat['substitutions'] is not None else 0
+                team_stats.fouls = stat['fouls'] if stat['fouls'] is not None else 0
                 team_stats.save()
     except Exception as e:
         print("ERROR UPDATING MATCH STATS: %s" % e)
@@ -197,8 +200,8 @@ def update_match_events_from_json(match, events_json):
         # Notify goals
         if new_event.event_type == 'goal':
             title = "Goal! {}".format(new_event.team.country.code_iso3.upper())
-            message = "{} {} - {} {}".format(match.team1.country.code_iso3, match.team1_score,
-                                             match.team2_score, match.team2.country.code_iso3)
+            message = "{} {} - {} {}".format(match.team1.country.code_iso3.upper(), match.team1_score,
+                                             match.team2_score, match.team2.country.code_iso3.upper())
             send_push_message_broadcast(token_list=device_tokens, title=title, message=message)
 
     print("Updating events of match %s ..DONE" % match)
