@@ -56,7 +56,7 @@ def update_match_statistics_from_json(match, stats_json):
             finally:
                 team_stats.possession = stat['possessiontime'] if stat['possessiontime'] is not None else 50
                 team_stats.passes = stat['passes']['total'] if stat['passes']['total'] is not None else 0
-                team_stats.passes_accuracy = stat['passes']['accurate'] if stat['passes']['accurate'] is not None else 100
+                team_stats.passes_accuracy = stat['passes']['percentage'] if stat['passes']['percentage'] is not None else 100
                 team_stats.shots_total = stat['shots']['total'] if stat['shots']['total'] is not None else 0
                 team_stats.shots_ongoal = stat['shots']['ongoal'] if stat['shots']['ongoal'] is not None else 0
                 if int(stat['shots']['total']) > 0:
