@@ -17,7 +17,10 @@ class MatchEventAdmin(admin.ModelAdmin):
 
 
 class MatchStatsAdmin(admin.ModelAdmin):
-    list_display = ( 'match', 'team', 'possession', )
+    list_display = (
+        'match', 'team', 'possession', 'passes', 'passes_accuracy', 'shots_total', 'shots_ongoal', 'shots_accuracy',
+        'dangerous_attacks', 'courner_kicks', 'free_kicks', 'yellow_cards', 'red_cards', 'substitutions', 'fouls',
+    )
     list_filter = (
         'match',
         'team',

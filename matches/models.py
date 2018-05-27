@@ -54,7 +54,19 @@ class MatchEvent(models.Model):
 class MatchStats(models.Model):
     match = models.ForeignKey(Match, related_name='match_stats', on_delete=models.CASCADE)
     team = models.ForeignKey(Team, related_name='team_stats', on_delete=models.CASCADE)
-    possession = models.PositiveIntegerField(default=0)
+    possession = models.PositiveIntegerField(default=50)
+    passes = models.PositiveIntegerField(default=0)
+    passes_accuracy = models.PositiveIntegerField(default=100)
+    shots_total = models.PositiveIntegerField(default=0)
+    shots_ongoal = models.PositiveIntegerField(default=0)
+    shots_accuracy = models.PositiveIntegerField(default=100)
+    dangerous_attacks = models.PositiveIntegerField(default=0)
+    courner_kicks = models.PositiveIntegerField(default=0)
+    free_kicks = models.PositiveIntegerField(default=0)
+    yellow_cards = models.PositiveIntegerField(default=0)
+    red_cards = models.PositiveIntegerField(default=0)
+    substitutions = models.PositiveIntegerField(default=0)
+    fouls = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return "{} -> {}: {}%".format(self.match, self.team, self.possession)

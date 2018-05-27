@@ -56,6 +56,18 @@ def update_match_statistics_from_json(match, stats_json):
                 team_stats = MatchStats(match=match, team=team)
             finally:
                 team_stats.possession = stat['possessiontime']
+                team_stats.passes = stat['passes']['total']
+                team_stats.passes_accuracy = stat['passes']['accurate']
+                team_stats.shots_total = stat['shots']['total']
+                team_stats.shots_ongoal = stat['shots']['ongoal']
+                team_stats.shots_accuracy = round((float(stat['shots']['ongoal']) / float(stat['shots']['total'])) * 100.0)
+                team_stats.dangerous_attacks = stat['attacks']['dangerous_attacks']
+                team_stats.courner_kicks = stat['corners']
+                team_stats.free_kicks = stat['free_kick']
+                team_stats.yellow_cards = stat['yellowcards']
+                team_stats.red_cards = stat['redcards']
+                team_stats.substitutions = stat['substitutions']
+                team_stats.fouls = stat['fouls']
                 team_stats.save()
     except Exception as e:
         print("ERROR UPDATING MATCH STATS: %s" % e)
