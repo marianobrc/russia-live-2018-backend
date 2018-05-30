@@ -1,3 +1,4 @@
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from competitions.models import CompetitionStage
 from teams.models import Team, Player
@@ -29,6 +30,8 @@ class Match(models.Model):
     team2 = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="team2")
     team1_score = models.PositiveIntegerField(null=True)
     team2_score = models.PositiveIntegerField(null=True)
+    team1_lineup = ArrayField(models.CharField(max_length=50, blank=True), size=24, null=True)
+    team2_lineup = ArrayField(models.CharField(max_length=50, blank=True), size=24, null=True)
 
     def __str__(self):
         return "ID {}, {} {} : {} {} - {}".format(

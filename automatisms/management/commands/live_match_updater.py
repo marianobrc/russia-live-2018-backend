@@ -153,12 +153,21 @@ def update_match_events_from_json(match, events_json):
         if event_json['player_id'] == "" and event_json['player_name'] == "":
             print("API ERROR: Player data missing, retry later..")
             return # Abort and retry in some seconds, results are not complete yet
+        # First get event type
+        event_type = get_event_type(api_event_type=event_json['type'])
+        # Notify goals ASAP, then continue processign event details
+        if event_type == 'goal':
+            title = "Goal! {}".format(new_event.team.country.code_iso3.upper())
+            message = "{} {} - {} {}".format(match.team1.country.code_iso3.upper(), match.team1_score,
+                                             match.team2_score, match.team2.country.code_iso3.upper())
+            send_push_message_broadcast(token_list=device_tokens, title=title, message=message)
+
         team = match.team2 if event_json['team_id'] == match.team2.external_id else match.team1
         new_event = MatchEvent()
         new_event.external_id = event_json['id']
         new_event.match = match
         new_event.team = team
-        new_event.event_type = get_event_type(api_event_type=event_json['type'])
+        new_event.event_type = event_type
         event_minute = event_json['minute']
         new_event.minute = int(event_minute) if event_minute is not None else 0
         event_extra_minute = event_json['extra_minute']
@@ -197,17 +206,22 @@ def update_match_events_from_json(match, events_json):
         new_event.description2 = event_json["related_player_name"] if new_event.event_type == 'player_change' else ""
         new_event.save()
         print("New event saved:  %s" % new_event)
-        # Notify goals
-        if new_event.event_type == 'goal':
-            title = "Goal! {}".format(new_event.team.country.code_iso3.upper())
-            message = "{} {} - {} {}".format(match.team1.country.code_iso3.upper(), match.team1_score,
-                                             match.team2_score, match.team2.country.code_iso3.upper())
-            send_push_message_broadcast(token_list=device_tokens, title=title, message=message)
 
     print("Updating events of match %s ..DONE" % match)
 
 
-
+def update_match_lineups_from_json(match, lineups_json):
+    print("Updating lineups of match %s .." % match)
+    # Team 1 is always local and Team 2 is always visitor
+    team1_id = int(match.team1.external_id)
+    team2_id = int(match.team2.external_id)
+    team1_players = [('%3s' % p['number']) + ('. %s' % p['player_name']) for p in lineups_json if p['team_id'] == team1_id]
+    team2_players = [('%3s' % p['number']) + ('. %s' % p['player_name']) for p in lineups_json if p['team_id'] == team2_id]
+    match.team1_lineup = team1_players
+    match.team2_lineup = team2_players
+    match.save()
+    print("Updating lineups of match %s ..DONE" % match)
+    return match
 
 
 class Command(BaseCommand):
@@ -284,10 +298,12 @@ class Command(BaseCommand):
 
                     try: # Update all match info, events and stats
                         match = update_match_status_from_json(match, match_json)
-                        stats_json = match_json['stats']['data']
-                        update_match_statistics_from_json(match, stats_json)
                         events_json = match_json['events']['data']
                         update_match_events_from_json(match, events_json)
+                        stats_json = match_json['stats']['data']
+                        update_match_statistics_from_json(match, stats_json)
+                        lineups_json = match_json['lineup']['data']
+                        update_match_lineups_from_json(match, lineups_json)
                     except Exception as e:
                         print("ERROR UPDATING MATCH: %s" % e)
                         sleep(1)
