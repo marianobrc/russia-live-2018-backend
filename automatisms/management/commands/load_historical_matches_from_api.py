@@ -36,6 +36,7 @@ def create_match_from_json(team1, team2, match_json ):
         match = Match()
         match.external_id = match_ext_id
         match.stage = None
+        match.status = Match.FINISHED
         match.stage_detail = match_json['stage']['data']['name'].lower()
         from datetime import datetime
         datetime_str = match_json['time']['starting_at']['date_time']
