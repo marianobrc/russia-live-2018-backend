@@ -32,6 +32,7 @@ class Match(models.Model):
     team2_score = models.PositiveIntegerField(null=True)
     team1_lineup = ArrayField(models.CharField(max_length=50, blank=True), size=24, null=True)
     team2_lineup = ArrayField(models.CharField(max_length=50, blank=True), size=24, null=True)
+    is_history = models.BooleanField(default=False)  # We store historical data about past worldcups matches
 
     def __str__(self):
         return "ID {}, {} {} : {} {} - {}".format(

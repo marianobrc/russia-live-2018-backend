@@ -6,11 +6,12 @@ class MatchAdmin(admin.ModelAdmin):
     list_display = (
         'id', 'stage', 'stage_detail', 'date', 'stadium', 'status',
         'is_live', 'team1', 'team2', 'team1_score', 'team2_score',
-        'team1_lineup', 'team2_lineup',
+        'team1_lineup', 'team2_lineup', 'is_history',
     )
     list_filter = (
         'status',
         'is_live',
+        'is_history',
     )
 
 
