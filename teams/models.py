@@ -11,7 +11,6 @@ class Team(models.Model):
     country = models.ForeignKey(Country, on_delete=models.CASCADE)
     competition = models.ForeignKey('competitions.Competition', on_delete=models.CASCADE, null=True)
 
-
     def __str__(self):
         return self.name
 

@@ -6,7 +6,7 @@ from teams.models import Team, Player
 
 class Match(models.Model):
     external_id = models.CharField(max_length=20)  # Id in external data provider
-    stage = models.ForeignKey(CompetitionStage, on_delete=models.CASCADE)
+    stage = models.ForeignKey(CompetitionStage, on_delete=models.CASCADE, null=True) # Historical matches are not tied to a stage
     stage_detail = models.CharField(max_length=255, blank=True)
     date = models.DateTimeField()
     stadium = models.CharField(max_length=255, blank=True)
