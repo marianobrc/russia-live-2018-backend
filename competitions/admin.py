@@ -15,7 +15,7 @@ class StandingAdmin(admin.ModelAdmin):
         'stage', 'sub_group', 'position', 'team', 'is_playing',
         'played', 'won', 'drawn', 'lost', 'goal_difference', 'points',
     )
-
+    list_filter = ('stage', 'sub_group', 'team', )
 
 admin.site.register(Competition, CompetitionAdmin)
 admin.site.register(CompetitionStage, CompetitionStageAdmin)
