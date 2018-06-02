@@ -53,6 +53,7 @@ class MatchDetailSerializer(serializers.ModelSerializer):
             'id', 'stage', 'stage_detail', 'date', 'stadium', 'minutes', 'status',
             'is_live', 'team1', 'team2', 'team1_score', 'team2_score',
             'events', 'stats', 'team1_lineup', 'team2_lineup',
+            'is_penalty_definition', 'team1_penalties_score', 'team2_penalties_score',
         )
         depth = 2
 

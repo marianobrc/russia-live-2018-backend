@@ -30,6 +30,9 @@ class Match(models.Model):
     team2 = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="team2")
     team1_score = models.PositiveIntegerField(null=True)
     team2_score = models.PositiveIntegerField(null=True)
+    is_penalty_definition = models.BooleanField(default=False)
+    team1_penalties_score = models.CharField(max_length=50, blank=True, default="")
+    team2_penalties_score = models.CharField(max_length=50, blank=True, default="")
     team1_lineup = ArrayField(models.CharField(max_length=50, blank=True), size=24, null=True)
     team2_lineup = ArrayField(models.CharField(max_length=50, blank=True), size=24, null=True)
     is_history = models.BooleanField(default=False)  # We store historical data about past worldcups matches
