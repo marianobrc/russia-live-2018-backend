@@ -13,6 +13,7 @@ class MatchAdmin(admin.ModelAdmin):
         'status',
         'is_live',
         'is_history',
+        'stage',
     )
 
 

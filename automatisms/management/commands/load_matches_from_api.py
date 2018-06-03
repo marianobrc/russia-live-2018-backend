@@ -34,7 +34,7 @@ def create_match_from_json(match_json, competition_id, stage_name, set_live=Fals
             team1 = Team.objects.get(competition=competition, external_id=team1_ext_id)
         except Team.DoesNotExist:
             print("Team with id %s not found" % team1_ext_id)
-            exit(1)
+            return None
         else:
             print("Team 1 found: %s" % team1)
 
@@ -44,7 +44,7 @@ def create_match_from_json(match_json, competition_id, stage_name, set_live=Fals
             team2 = Team.objects.get(competition=competition, external_id=team2_ext_id)
         except Team.DoesNotExist:
             print("Team with id %s not found" % team2_ext_id)
-            exit(1)
+            return None
         else:
             print("Team 2 found: %s" % team2)
 
@@ -53,7 +53,7 @@ def create_match_from_json(match_json, competition_id, stage_name, set_live=Fals
         match = Match()
         match.external_id = match_ext_id
         match.stage = CompetitionStage.objects.get(competition=competition, name=stage_name)
-        match.stage_detail = match_json['stage']['data']['name'].lower()
+        match.stage_detail = match_json['group']['data']['name']
         from datetime import datetime
         datetime_str = match_json['time']['starting_at']['date_time']
         datetime_object = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')

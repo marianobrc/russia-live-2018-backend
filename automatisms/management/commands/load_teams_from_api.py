@@ -5,7 +5,7 @@ from datetime import datetime
 import requests
 from django.core.management.base import BaseCommand
 from matches.models import Match
-from competitions.models import CompetitionStage
+from competitions.models import CompetitionStage, Competition
 from teams.models import Team, Player
 from countries.models import Country
 
@@ -25,10 +25,20 @@ def create_team_players_from_json(team, squad_json):
                 print("Player id %s exist! (skipped)" % player_ext_id)
                 continue
             first_name = p['firstname']
+            if first_name is None or first_name == "":
+                first_name = p['common_name'].split()[0]
             surname = p['lastname']
+            if surname is None or surname == "":
+                surname = p['common_name'].split()[1]
             common_name = p['common_name']
-            if len(common_name) > 11: # Shorten names
-                common_name = common_name[:11] + "."  # Limit surname to 11 chars
+            if len(common_name) > 14: # Shorten names
+                very_first_name = first_name.split(' ')[0][0] # First letter of first name
+                common_name = very_first_name + ". " + surname  # J. Masscheranno
+                if len(common_name) > 14: # Use only surname
+                    common_name = surname # Masscheranno
+                if len(common_name) > 14: # Abreviate
+                    common_name = common_name[:12] + ".." # Masscheran..
+
             player = Player.objects.create(
                 external_id=player_ext_id,
                 team=team,
@@ -53,9 +63,21 @@ class Command(BaseCommand):
 
     help = 'Load matches from api to database, creating teams and players as needed'
 
+    def add_arguments(self, parser):
+        parser.add_argument('--competition', dest='competition_id', required=True, help='Competition EXT ID')
+
     def handle(self, *args, **options):
         global total_requests
         try:
+            competition_id = options['competition_id']
+
+            try: # First try to get or create teh country
+                print("Looking for competition with ID %s .." % competition_id)
+                competition = Competition.objects.get(external_id=competition_id)
+            except Exception as e:
+                print("Error Looking for competition with ID %s .." % competition_id)
+                exit(1)
+
             print("Fetching teams ..")
             request_url = API_ENDPOINT_URL + 'teams/season/892?api_token={}&include=country,squad.player'.format(
                 API_KEY)
@@ -86,7 +108,7 @@ class Command(BaseCommand):
                     team_country.code_iso3 = country_code
                     team_country.save()
                 except Exception as e:
-                    print("Error getting / creating country (team skipped): %s .." % e)
+                    print("Error getting / creating country (skipped): %s .." % e)
                     continue
 
                 try: # Then create the team
@@ -96,6 +118,7 @@ class Command(BaseCommand):
                 except Team.DoesNotExist:
                         print("Creating Team with ext ID %s .." % team_ext_id)
                         team = Team.objects.create(
+                            competition=competition,
                             external_id=team_ext_id,
                             name=team_json['name'],
                             country=team_country,
