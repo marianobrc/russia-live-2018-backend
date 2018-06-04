@@ -53,7 +53,14 @@ def create_match_from_json(match_json, competition_id, stage_name, set_live=Fals
         match = Match()
         match.external_id = match_ext_id
         match.stage = CompetitionStage.objects.get(competition=competition, name=stage_name)
-        match.stage_detail = match_json['group']['data']['name']
+        try:
+            group_name = match_json['group']['data']['name']
+        except Exception:
+            try:
+                group_name = match_json['stage']['data']['name']
+            except Exception:
+                group_name = ""
+        match.stage_detail = group_name
         from datetime import datetime
         datetime_str = match_json['time']['starting_at']['date_time']
         datetime_object = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
