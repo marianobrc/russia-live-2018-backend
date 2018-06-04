@@ -70,8 +70,8 @@ MIDDLEWARE = [
 # Exclude Api-Key header check
 API_KEY_MIDDLEWARE_EXCLUDED_URL_PREFIXES = (
     '/admin',
-    '/api',
-    '/push',
+    #'/api',
+    #'/push',
 )
 
 REST_FRAMEWORK = {
