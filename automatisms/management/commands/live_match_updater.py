@@ -95,7 +95,7 @@ def get_event_type(api_event_type):
 
 def update_match_events_from_json(match, events_json):
     print("Updating events of match %s .." % match)
-    device_tokens = [t.token for t in PushToken.objects.filter(active=True)]
+    device_tokens = [t.token for t in PushToken.objects.filter(notifications_on=True, active=True)]
     # Add only new events checking external_id
     current_match_event_ids = match.events.all().values_list('external_id', flat=True)
     if len(current_match_event_ids) == 0 and match.status != Match.NOT_STARTED:

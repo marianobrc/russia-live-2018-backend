@@ -71,7 +71,7 @@ MIDDLEWARE = [
 API_KEY_MIDDLEWARE_EXCLUDED_URL_PREFIXES = (
     '/admin',
     '/api',
-    '/push/tokens/',
+    '/push',
 )
 
 REST_FRAMEWORK = {

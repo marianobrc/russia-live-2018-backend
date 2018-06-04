@@ -15,8 +15,9 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from .views import PushTokenCreateAPIView
+from .views import PushTokenCreateAPIView, PushSettingsRetrieveUpdateAPIView
 
 urlpatterns = [
-    path('tokens/', PushTokenCreateAPIView.as_view(), name='push_token')
+    path('tokens/', PushTokenCreateAPIView.as_view(), name='push_token'),
+    path('settings/<token>/', PushSettingsRetrieveUpdateAPIView.as_view(), name='push_settings')
 ]

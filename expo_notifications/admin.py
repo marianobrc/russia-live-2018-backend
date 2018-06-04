@@ -4,7 +4,7 @@ from .models import PushToken
 
 class PushTokenAdmin(admin.ModelAdmin):
     list_display = (
-        'token', 'active',
+        'token', 'active', 'notifications_on',
     )
 
 

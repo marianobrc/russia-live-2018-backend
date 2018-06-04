@@ -7,7 +7,7 @@ class PushTokenSerializer(serializers.ModelSerializer):
     class Meta:
         model = PushToken
         fields = (
-            'token',
+            'token', 'notifications_on',
         )
 
 
