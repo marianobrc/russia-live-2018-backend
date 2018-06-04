@@ -153,8 +153,16 @@ def update_match_events_from_json(match, events_json):
         if event_json['player_id'] == "" and event_json['player_name'] == "":
             print("API ERROR: Player data missing, retry later..")
             return # Abort and retry in some seconds, results are not complete yet
+
         # First get event type
         event_type = get_event_type(api_event_type=event_json['type'])
+        team = match.team2 if event_json['team_id'] == match.team2.external_id else match.team1
+        new_event = MatchEvent()
+        new_event.external_id = event_json['id']
+        new_event.match = match
+        new_event.team = team
+        new_event.event_type = event_type
+
         # Notify goals ASAP, then continue processign event details
         if event_type == 'goal':
             title = "Goal! {}".format(new_event.team.country.code_iso3.upper())
@@ -162,12 +170,6 @@ def update_match_events_from_json(match, events_json):
                                              match.team2_score, match.team2.country.code_iso3.upper())
             send_push_message_broadcast(token_list=device_tokens, title=title, message=message)
 
-        team = match.team2 if event_json['team_id'] == match.team2.external_id else match.team1
-        new_event = MatchEvent()
-        new_event.external_id = event_json['id']
-        new_event.match = match
-        new_event.team = team
-        new_event.event_type = event_type
         event_minute = event_json['minute']
         new_event.minute = int(event_minute) if event_minute is not None else 0
         event_extra_minute = event_json['extra_minute']
