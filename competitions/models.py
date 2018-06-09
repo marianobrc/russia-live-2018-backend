@@ -31,7 +31,7 @@ class Standing(models.Model):
     won = models.PositiveIntegerField(default=0)
     drawn = models.PositiveIntegerField(default=0)
     lost = models.PositiveIntegerField(default=0)
-    goal_difference = models.PositiveIntegerField(default=0)
+    goal_difference = models.IntegerField(default=0)
     points = models.PositiveIntegerField(default=0)
     is_playing = models.BooleanField(default=False)  # There is a match on course that can affect this standing
 
