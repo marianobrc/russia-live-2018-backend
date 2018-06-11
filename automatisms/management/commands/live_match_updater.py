@@ -127,7 +127,7 @@ def update_match_events_from_json(match, events_json):
         title = "Half Time"
         message = "{} {} - {} {}".format(match.team1.country.code_iso3, match.team1_score,
                                          match.team2_score, match.team2.country.code_iso3)
-        send_push_message_broadcast(token_list=device_tokens, title=title, message=message)
+        #send_push_message_broadcast(token_list=device_tokens, title=title, message=message)
         return # Don't update more events during half-time
     elif match.status == Match.FINISHED and MatchEvent.objects.filter(match=match, event_type='match_finished').count() == 0:
         new_event = MatchEvent()
@@ -147,12 +147,9 @@ def update_match_events_from_json(match, events_json):
         print("Match %s ..FINISHED." % match)
         return
 
-    # Process events obtained from the API
+    # Process NEW events obtained from the API
     new_events_json = [ev for ev in events_json if str(ev['id']) not in current_match_event_ids]
     for event_json in new_events_json:
-        if event_json['player_id'] == "" and event_json['player_name'] == "":
-            print("API ERROR: Player data missing, retry later..")
-            return # Abort and retry in some seconds, results are not complete yet
 
         # First get event type
         event_type = get_event_type(api_event_type=event_json['type'])
@@ -177,37 +174,92 @@ def update_match_events_from_json(match, events_json):
         try:
             player = Player.objects.get(external_id=event_json['player_id'])
         except Exception:
-            player_fullname = event_json['player_name']
-            print("Creating missing player: %s" % player_fullname)
-            # Make player with avalilable data
-            try:  # Shorten names
-                common_name_split = player_fullname.split()
-                first_name = common_name_split[0]
-                first_name_initial = first_name[0]
-                surname = common_name_split[1]
-                if len(surname) > 8:
-                    surname = surname[:8] + "."  # Limit surname to 8 chars
-                shortened_name = "{}. {}".format(first_name_initial, surname)
-            except Exception:
-                shortened_name = player_fullname
-                first_name = player_fullname
-                surname = ""
-            # Create the new player
-            new_player = Player.objects.create(
-                external_id=event_json['player_id'],
-                team=team,
-                common_name=shortened_name,
-                first_name=first_name,
-                last_name=surname,
-                nationality=None,  # ToDo map to countries
-                position="",
-            )
-            player = new_player
+            if event_json['player_name'] != "": # Is a new player
+                player_fullname = event_json['player_name']
+                print("Creating missing player: %s" % player_fullname)
+                # Make player with avalilable data
+                try:  # Shorten names
+                    common_name_split = player_fullname.split()
+                    first_name = common_name_split[0]
+                    first_name_initial = first_name[0]
+                    surname = common_name_split[1]
+                    if len(surname) > 8:
+                        surname = surname[:8] + "."  # Limit surname to 8 chars
+                    shortened_name = "{}. {}".format(first_name_initial, surname)
+                except Exception:
+                    shortened_name = player_fullname
+                    first_name = player_fullname
+                    surname = ""
+                # Create the new player
+                new_player = Player.objects.create(
+                    external_id=event_json['player_id'],
+                    team=team,
+                    common_name=shortened_name,
+                    first_name=first_name,
+                    last_name=surname,
+                    nationality=None,  # ToDo map to countries
+                    position="",
+                )
+                player = new_player
+            else: # No player info yet, will be updated later
+                player = None
         new_event.player = player
         new_event.description = "" # ToDo check when to use it
         new_event.description2 = event_json["related_player_name"] if new_event.event_type == 'player_change' else ""
         new_event.save()
         print("New event saved:  %s" % new_event)
+
+    # Now update old events
+    old_events_json = [ev for ev in events_json if str(ev['id']) in current_match_event_ids]
+    for old_event_json in old_events_json:
+        try:
+            old_event = MatchEvent.objects.get(external_id=old_event_json['id'])
+        except Exception as e:
+            print("Error updating event %s (skipped): \n%s" % (old_event, e))
+            continue
+        else:
+            event_minute = event_json['minute']
+            old_event.minute = int(event_minute) if event_minute is not None else 0
+            event_extra_minute = event_json['extra_minute']
+            old_event.extra_minute = int(event_extra_minute) if event_extra_minute is not None else 0
+            try:
+                player = Player.objects.get(external_id=event_json['player_id'])
+            except Exception:
+                if event_json['common_name'] != "":  # Is a new player
+                    print("Creating missing player: %s" % event_json['common_name'])
+                    # Make player with avalilable data
+                    first_name = event_json['firstname']
+                    if first_name is None or first_name == "":
+                        first_name = event_json['common_name'].split()[0]
+                    surname = event_json['lastname']
+                    if surname is None or surname == "":
+                        surname = event_json['common_name'].split()[1]
+                    common_name = event_json['common_name']
+                    if len(common_name) > 14:  # Shorten names
+                        very_first_name = first_name.split(' ')[0][0]  # First letter of first name
+                        common_name = very_first_name + ". " + surname  # J. Masscheranno
+                        if len(common_name) > 14:  # Use only surname
+                            common_name = surname  # Masscheranno
+                        if len(common_name) > 14:  # Abreviate
+                            common_name = common_name[:12] + ".."  # Masscheran..
+                    # Create the new player
+                    new_player = Player.objects.create(
+                        external_id=event_json['player_id'],
+                        team=team,
+                        common_name=common_name,
+                        first_name=first_name,
+                        last_name=surname,
+                        nationality=team.country,  # All players must be from the team's country in this worldcup
+                        position=event_json['position_id'],
+                    )
+                    player = new_player
+                else:  # No player info yet, will be updated later
+                    player = None
+            old_event.player = player
+            old_event.description = ""  # ToDo check when to use it
+            old_event.description2 = event_json["related_player_name"] if new_event.event_type == 'player_change' else ""
+            old_event.save()
+            print("Old event updated:  %s" % new_event)
 
     print("Updating events of match %s ..DONE" % match)
 
