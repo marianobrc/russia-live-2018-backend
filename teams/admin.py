@@ -7,6 +7,7 @@ class TeamAdmin(admin.ModelAdmin):
 
 
 class PlayerAdmin(admin.ModelAdmin):
+    list_display = ('common_name', 'external_id', 'first_name', 'last_name', 'position', )
     list_filter = (
         'team',
     )

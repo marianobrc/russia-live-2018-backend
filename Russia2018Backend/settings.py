@@ -159,3 +159,6 @@ STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
 )
+
+# Celery config
+CELERY_BROKER_URL = 'amqp://localhost'

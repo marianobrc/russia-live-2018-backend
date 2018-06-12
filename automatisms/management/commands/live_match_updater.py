@@ -1,3 +1,4 @@
+import json
 from time import sleep
 import requests
 from django.core.management.base import BaseCommand
@@ -93,7 +94,7 @@ def get_event_type(api_event_type):
         return "match_generic"
 
 
-def update_match_events_from_json(match, events_json):
+def update_match_events_from_json(match, events_json, is_simulation=False, sim_time=0):
     print("Updating events of match %s .." % match)
     device_tokens = [t.token for t in PushToken.objects.filter(notifications_on=True, active=True)]
     # Add only new events checking external_id
@@ -149,6 +150,7 @@ def update_match_events_from_json(match, events_json):
 
     # Process NEW events obtained from the API
     new_events_json = [ev for ev in events_json if str(ev['id']) not in current_match_event_ids]
+    new_events_json = sorted(new_events_json, key=lambda event: event['minute'])
     for event_json in new_events_json:
 
         # First get event type
@@ -174,7 +176,7 @@ def update_match_events_from_json(match, events_json):
         try:
             player = Player.objects.get(external_id=event_json['player_id'])
         except Exception:
-            if event_json['player_name'] != "": # Is a new player
+            if event_json['player_name'] is not None and event_json['player_name'] != "": # Is a new player
                 player_fullname = event_json['player_name']
                 print("Creating missing player: %s" % player_fullname)
                 # Make player with avalilable data
@@ -208,14 +210,16 @@ def update_match_events_from_json(match, events_json):
         new_event.description2 = event_json["related_player_name"] if new_event.event_type == 'player_change' else ""
         new_event.save()
         print("New event saved:  %s" % new_event)
+        if is_simulation:
+            sleep(int(sim_time))
 
     # Now update old events
     old_events_json = [ev for ev in events_json if str(ev['id']) in current_match_event_ids]
-    for old_event_json in old_events_json:
+    for event_json in old_events_json:
         try:
-            old_event = MatchEvent.objects.get(external_id=old_event_json['id'])
+            old_event = MatchEvent.objects.get(external_id=event_json['id'])
         except Exception as e:
-            print("Error updating event %s (skipped): \n%s" % (old_event, e))
+            print("Error updating event %s (skipped): \n%s" % (event_json, e))
             continue
         else:
             event_minute = event_json['minute']
@@ -225,8 +229,8 @@ def update_match_events_from_json(match, events_json):
             try:
                 player = Player.objects.get(external_id=event_json['player_id'])
             except Exception:
-                if event_json['common_name'] != "":  # Is a new player
-                    print("Creating missing player: %s" % event_json['common_name'])
+                if event_json['player_name'] is not None and event_json['player_name']:  # Is a new player
+                    print("Creating missing player: %s" % event_json['player_name'] )
                     # Make player with avalilable data
                     first_name = event_json['firstname']
                     if first_name is None or first_name == "":
@@ -257,9 +261,9 @@ def update_match_events_from_json(match, events_json):
                     player = None
             old_event.player = player
             old_event.description = ""  # ToDo check when to use it
-            old_event.description2 = event_json["related_player_name"] if new_event.event_type == 'player_change' else ""
+            old_event.description2 = event_json["related_player_name"] if old_event.event_type == 'player_change' else ""
             old_event.save()
-            print("Old event updated:  %s" % new_event)
+            print("Old event updated:  %s" % old_event)
 
     print("Updating events of match %s ..DONE" % match)
 
@@ -289,6 +293,9 @@ class Command(BaseCommand):
         parser.add_argument('--match', dest='match_id', help='match to track')
         parser.add_argument('--set-live', dest='set_live', required=False, action='store_true')
         parser.add_argument('--old-match', dest='is_old_match', required=False, action='store_true')
+        parser.add_argument('--simulate', dest='is_simulation', required=False, action='store_true', default=False)
+        parser.add_argument('--from-file', dest='json_file', required=False, )
+        parser.add_argument('--sim-time', dest='simulation_delay', required=False, )
 
 
     def handle(self, *args, **options):
@@ -297,6 +304,9 @@ class Command(BaseCommand):
             match_id = options['match_id']
             set_live = options['set_live']
             is_old_match = options['is_old_match']
+            is_simulation = options['is_simulation']
+            json_file = options['json_file']
+            simulation_delay = options['simulation_delay']
         except Exception as e:
             print("Error %s" % e)
             exit(1)
@@ -305,32 +315,36 @@ class Command(BaseCommand):
             while True:
                 # Get current live matches from API
                 print("Fetching single match with ID %s" % (match_id))
-                if is_old_match:
-                    request_url = API_ENDPOINT_URL + "fixtures/{}?api_token={}&include=localTeam,visitorTeam,venue,lineup,events,stats,group,stage".format(
-                        match_id, API_KEY)
-                else:
-                    request_url = API_ENDPOINT_URL + "livescores/?api_token={}&include=localTeam,visitorTeam,venue,lineup,events,stats,group,stage".format(API_KEY)
-                print(request_url)
-                try:
-                    response = requests.get(request_url, verify=False, timeout=10)
-                    total_requests += 1
-                except Exception:
-                    print("REQUEST ERROR, RETRYING..")
-                    sleep(1)
-                    response = requests.get(request_url, verify=False, timeout=10)
-                    total_requests += 1
-                if response.status_code != 200:
-                    print("Error status: %s, %s" % (response.status_code, response.json()))
-                    if response.status_code == 429:
-                        print("API LIMIT EXCEEDED: Total requests: %s" % total_requests)
-                        sleep(30)  # Slow down
-                    continue
+                if is_simulation:
+                    f = open(json_file, 'r')
+                    live_matches_json = json.load(f)['data']
+                else: # real match
+                    if is_old_match:
+                        request_url = API_ENDPOINT_URL + "fixtures/{}?api_token={}&include=localTeam,visitorTeam,venue,lineup,events,stats,group,stage".format(
+                            match_id, API_KEY)
+                    else:
+                        request_url = API_ENDPOINT_URL + "livescores/?api_token={}&include=localTeam,visitorTeam,venue,lineup,events,stats,group,stage".format(API_KEY)
+                    print(request_url)
+                    try:
+                        response = requests.get(request_url, verify=False, timeout=10)
+                        total_requests += 1
+                    except Exception:
+                        print("REQUEST ERROR, RETRYING..")
+                        sleep(1)
+                        response = requests.get(request_url, verify=False, timeout=10)
+                        total_requests += 1
+                    if response.status_code != 200:
+                        print("Error status: %s, %s" % (response.status_code, response.json()))
+                        if response.status_code == 429:
+                            print("API LIMIT EXCEEDED: Total requests: %s" % total_requests)
+                            sleep(30)  # Slow down
+                        continue
 
-                # Check if is single amtch or all
-                if is_old_match:
-                    live_matches_json = [ response.json()['data'] ]
-                else:
-                    live_matches_json = response.json()['data']
+                    # Check if is single amtch or all
+                    if is_old_match:
+                        live_matches_json = [ response.json()['data'] ]
+                    else:
+                        live_matches_json = response.json()['data']
 
                 live_matches_ids = [ j['id'] for j in live_matches_json ]
                 # If is a specific match nad isn't live then abort
@@ -353,7 +367,7 @@ class Command(BaseCommand):
                     try: # Update all match info, events and stats
                         match = update_match_status_from_json(match, match_json)
                         events_json = match_json['events']['data']
-                        update_match_events_from_json(match, events_json)
+                        update_match_events_from_json(match, events_json, is_simulation, simulation_delay)
                         stats_json = match_json['stats']['data']
                         update_match_statistics_from_json(match, stats_json)
                         lineups_json = match_json['lineup']['data']
