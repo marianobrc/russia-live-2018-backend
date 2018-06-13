@@ -114,22 +114,22 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
         title = "Match started"
         message = "{} vs {}".format(match.team1.country.code_iso3.upper(), match.team2.country.code_iso3.upper())
         send_push_message_broadcast(token_list=device_tokens, title=title, message=message)
-    elif match.status == Match.HALFTIME and MatchEvent.objects.filter(match=match, event_type='half_time').count() == 0:
-        new_event = MatchEvent()
-        new_event.external_id = '-1'
-        new_event.match = match
-        new_event.team = match.team2
-        new_event.event_type = 'half_time'
-        new_event.minute = 45 # ToDo: check how to handle minutes in half time
-        new_event.extra_minute = 0
-        new_event.description = "Half Time"
-        new_event.description2 = ""
-        new_event.save()
-        title = "Half Time"
-        message = "{} {} - {} {}".format(match.team1.country.code_iso3, match.team1_score,
-                                         match.team2_score, match.team2.country.code_iso3)
+    # elif match.status == Match.HALFTIME and MatchEvent.objects.filter(match=match, event_type='half_time').count() == 0:
+    #     new_event = MatchEvent()
+    #     new_event.external_id = '-1'
+    #     new_event.match = match
+    #     new_event.team = match.team2
+    #     new_event.event_type = 'half_time'
+    #     new_event.minute = 45 # ToDo: check how to handle minutes in half time
+    #     new_event.extra_minute = 0
+    #     new_event.description = "Half Time"
+    #     new_event.description2 = ""
+    #     new_event.save()
+    #     title = "Half Time"
+    #     message = "{} {} - {} {}".format(match.team1.country.code_iso3, match.team1_score,
+    #                                      match.team2_score, match.team2.country.code_iso3)
         #send_push_message_broadcast(token_list=device_tokens, title=title, message=message)
-        return # Don't update more events during half-time
+        #return # Don't update more events during half-time
     elif match.status == Match.FINISHED and MatchEvent.objects.filter(match=match, event_type='match_finished').count() == 0:
         new_event = MatchEvent()
         new_event.external_id = '-1'
@@ -275,8 +275,8 @@ def update_match_lineups_from_json(match, lineups_json):
     team2_id = int(match.team2.external_id)
     team1_players = [('%4s' % p['number']) + ('. %s' % p['player_name']) for p in lineups_json if p['team_id'] == team1_id]
     team2_players = [('%4s' % p['number']) + ('. %s' % p['player_name']) for p in lineups_json if p['team_id'] == team2_id]
-    match.team1_lineup = team1_players
-    match.team2_lineup = team2_players
+    match.team1_lineup = team1_players if len(team1_players) > 0 else "Data not available. Please try again later."
+    match.team2_lineup = team2_players if len(team2_players) > 0 else "Data not available. Please try again later."
     match.save()
     print("Updating lineups of match %s ..DONE" % match)
     return match
