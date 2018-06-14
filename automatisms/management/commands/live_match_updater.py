@@ -196,7 +196,7 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
                     # Create the new player
                     player_id = event_json['player_id']
                     if player_id is None:
-                        player_id = "unknown_player"
+                        player_id = "no_player_id"
                     new_player = Player.objects.create(
                         external_id=player_id,
                         team=team,
@@ -211,12 +211,26 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
                     player = None
             new_event.player = player
             new_event.description = "" # ToDo check when to use it
-            new_event.description2 = event_json["related_player_name"] if new_event.event_type == 'player_change' else ""
+            if new_event.event_type == 'player_change':
+                try:
+                    player_out_fullname = event_json["related_player_name"]
+                    player_out_name = player_out_fullname
+                    if len(player_out_name) > 11:
+                        player_splited_fullname = player_out_fullname.split()
+                        player_out_name = player_splited_fullname[0][0] + ". " + ' '.join(player_splited_fullname[1:])
+                        if len(player_out_name) > 11:
+                            player_out_name = player_out_name[: 10] + ".."
+                except Exception as e:
+                    player_out_name = player_splited_fullname[: 10] + ".."
+            else:
+                player_out_name = ""
+            new_event.description2 = player_out_name
             new_event.save()
             print("New event saved:  %s" % new_event)
             if is_simulation:
                 sleep(int(sim_time))
         except Exception as e:
+            print("ERROR creating event (skipped): %s " % e)
             continue
 
     # Now update old events
@@ -271,11 +285,24 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
                     else:  # No player info yet, will be updated later
                         pass # Player is updated only if there is a new one
                 old_event.description = ""  # ToDo check when to use it
-                player_in_name = event_json["related_player_name"][:12]+".."
-                old_event.description2 = player_in_name if old_event.event_type == 'player_change' else ""
+                if old_event.event_type == 'player_change':
+                    try:
+                        player_out_fullname = event_json["related_player_name"]
+                        player_out_name = player_out_fullname
+                        if len(player_out_name) > 11:
+                            player_splited_fullname = player_out_fullname.split()
+                            player_out_name = player_splited_fullname[0][0] + ". " + ' '.join(player_splited_fullname[1:])
+                            if len(player_out_name) > 11:
+                                player_out_name = player_out_name[: 10] + ".."
+                    except Exception as e:
+                        player_out_name = player_splited_fullname[: 10] + ".."
+                else:
+                    player_out_name = ""
+                old_event.description2 = player_out_name
                 old_event.save()
                 print("Old event updated:  %s" % old_event)
         except Exception as e:
+            print("ERROR Updating event (skipped): %s " % e)
             continue
 
     print("Updating events of match %s ..DONE" % match)
