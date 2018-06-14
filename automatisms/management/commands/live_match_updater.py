@@ -230,15 +230,14 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
                 print("Error updating event %s (skipped): \n%s" % (event_json, e))
                 continue
             else:
-                event_minute = event_json['minute']
-                old_event.minute = int(event_minute) if event_minute is not None else 0
-                if event_json['extra_minute'] is not None:
-                    old_event.minute += int(event_json['extra_minute'])
-                old_event.extra_minute = 0
+                # Only the player is updated and is updated if the id exists
+                if event_json['player_id'] is None:
+                    print("No player id updating event %s (skipped): \n%s" % (event_json, e))
+                    continue
                 try:
                     player = Player.objects.get(external_id=event_json['player_id'])
                 except Exception:
-                    if event_json['player_name'] is not None and event_json['player_name']:  # Is a new player
+                    if event_json['player_name'] is not None:  # Is a new player
                         print("Creating missing player: %s" % event_json['player_name'] )
                         # Make player with avalilable data
                         first_name = event_json['firstname']
@@ -268,12 +267,12 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
                             nationality=team.country,  # All players must be from the team's country in this worldcup
                             position=event_json['position_id'],
                         )
-                        player = new_player
+                        old_event.player = new_player
                     else:  # No player info yet, will be updated later
-                        player = None
-                old_event.player = player
+                        pass # Player is updated only if there is a new one
                 old_event.description = ""  # ToDo check when to use it
-                old_event.description2 = event_json["related_player_name"] if old_event.event_type == 'player_change' else ""
+                player_in_name = event_json["related_player_name"][:12]+".."
+                old_event.description2 = player_in_name if old_event.event_type == 'player_change' else ""
                 old_event.save()
                 print("Old event updated:  %s" % old_event)
         except Exception as e:
