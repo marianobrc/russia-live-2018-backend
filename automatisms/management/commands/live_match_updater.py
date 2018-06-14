@@ -215,13 +215,13 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
                 try:
                     player_out_fullname = event_json["related_player_name"]
                     player_out_name = player_out_fullname
-                    if len(player_out_name) > 11:
+                    if len(player_out_name) > 12:
                         player_splited_fullname = player_out_fullname.split()
                         player_out_name = player_splited_fullname[0][0] + ". " + ' '.join(player_splited_fullname[1:])
-                        if len(player_out_name) > 11:
-                            player_out_name = player_out_name[: 10] + ".."
+                        if len(player_out_name) > 12:
+                            player_out_name = player_out_name[: 11] + ".."
                 except Exception as e:
-                    player_out_name = player_splited_fullname[: 10] + ".."
+                    player_out_name = player_splited_fullname[: 11] + ".."
             else:
                 player_out_name = ""
             new_event.description2 = player_out_name
@@ -289,13 +289,13 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
                     try:
                         player_out_fullname = event_json["related_player_name"]
                         player_out_name = player_out_fullname
-                        if len(player_out_name) > 11:
+                        if len(player_out_name) > 12:
                             player_splited_fullname = player_out_fullname.split()
                             player_out_name = player_splited_fullname[0][0] + ". " + ' '.join(player_splited_fullname[1:])
-                            if len(player_out_name) > 11:
-                                player_out_name = player_out_name[: 10] + ".."
+                            if len(player_out_name) > 12:
+                                player_out_name = player_out_name[: 11] + ".."
                     except Exception as e:
-                        player_out_name = player_splited_fullname[: 10] + ".."
+                        player_out_name = player_splited_fullname[: 11] + ".."
                 else:
                     player_out_name = ""
                 old_event.description2 = player_out_name
