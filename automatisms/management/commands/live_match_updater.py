@@ -275,8 +275,10 @@ def update_match_lineups_from_json(match, lineups_json):
     team2_id = int(match.team2.external_id)
     team1_players = [('%4s' % p['number']) + ('. %s' % p['player_name']) for p in lineups_json if p['team_id'] == team1_id]
     team2_players = [('%4s' % p['number']) + ('. %s' % p['player_name']) for p in lineups_json if p['team_id'] == team2_id]
-    match.team1_lineup = team1_players if len(team1_players) > 0 else "Data not available. Please try again later."
-    match.team2_lineup = team2_players if len(team2_players) > 0 else "Data not available. Please try again later."
+    if len(team1_players) > 0:
+        match.team1_lineup = team1_players
+    if len(team2_players) > 0:
+        match.team2_lineup = team2_players
     match.save()
     print("Updating lineups of match %s ..DONE" % match)
     return match
