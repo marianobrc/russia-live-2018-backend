@@ -171,8 +171,9 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
 
             event_minute = event_json['minute']
             new_event.minute = int(event_minute) if event_minute is not None else 0
-            event_extra_minute = event_json['extra_minute']
-            new_event.extra_minute = int(event_extra_minute) if event_extra_minute is not None else 0
+            if event_json['extra_minute'] is not None:
+                new_event.minute += int(event_json['extra_minute'])
+            new_event.extra_minute = 0 # deprecated
             try:
                 player = Player.objects.get(external_id=event_json['player_id'])
             except Exception:
@@ -218,9 +219,11 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
         except Exception as e:
             continue
 
-        # Now update old events
-        old_events_json = [ev for ev in events_json if str(ev['id']) in current_match_event_ids]
-        for event_json in old_events_json:
+    # Now update old events
+    old_events_json = [ev for ev in events_json if str(ev['id']) in current_match_event_ids]
+    old_events_json = sorted(old_events_json, key=lambda event: event['minute'])
+    for event_json in old_events_json:
+        try:
             try:
                 old_event = MatchEvent.objects.get(external_id=event_json['id'])
             except Exception as e:
@@ -229,8 +232,9 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
             else:
                 event_minute = event_json['minute']
                 old_event.minute = int(event_minute) if event_minute is not None else 0
-                event_extra_minute = event_json['extra_minute']
-                old_event.extra_minute = int(event_extra_minute) if event_extra_minute is not None else 0
+                if event_json['extra_minute'] is not None:
+                    old_event.minute += int(event_json['extra_minute'])
+                old_event.extra_minute = 0
                 try:
                     player = Player.objects.get(external_id=event_json['player_id'])
                 except Exception:
@@ -252,8 +256,11 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
                             if len(common_name) > 14:  # Abreviate
                                 common_name = common_name[:12] + ".."  # Masscheran..
                         # Create the new player
+                        player_id = event_json['player_id']
+                        if player_id is None:
+                            player_id = "unknown_player"
                         new_player = Player.objects.create(
-                            external_id=event_json['player_id'],
+                            external_id=player_id,
                             team=team,
                             common_name=common_name,
                             first_name=first_name,
@@ -269,6 +276,8 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
                 old_event.description2 = event_json["related_player_name"] if old_event.event_type == 'player_change' else ""
                 old_event.save()
                 print("Old event updated:  %s" % old_event)
+        except Exception as e:
+            continue
 
     print("Updating events of match %s ..DONE" % match)
 
