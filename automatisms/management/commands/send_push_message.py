@@ -18,5 +18,4 @@ class Command(BaseCommand):
         title = options['title']
         message = options['message']
         device_tokens = [t.token for t in PushToken.objects.filter(notifications_on=True, active=True)]
-        device_tokens *= 100 # Generate 200 tokens to test
         send_push_message_broadcast(token_list=device_tokens, title=title, message=message)
