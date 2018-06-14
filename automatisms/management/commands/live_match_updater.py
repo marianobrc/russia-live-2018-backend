@@ -214,7 +214,7 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
                 sleep(int(sim_time))
         except Exception as e:
             continue
-            
+
         # Now update old events
         old_events_json = [ev for ev in events_json if str(ev['id']) in current_match_event_ids]
         for event_json in old_events_json:
