@@ -163,7 +163,7 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
             new_event.event_type = event_type
 
             # Notify goals ASAP, then continue processign event details
-            if event_type == 'goal':
+            if event_type == 'goal' and match.status != Match.FINISHED:
                 title = "Goal! {}".format(new_event.team.country.code_iso3.upper())
                 message = "{} {} - {} {}".format(match.team1.country.code_iso3.upper(), match.team1_score,
                                                  match.team2_score, match.team2.country.code_iso3.upper())
@@ -193,8 +193,11 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
                         first_name = player_fullname
                         surname = ""
                     # Create the new player
+                    player_id = event_json['player_id']
+                    if player_id is None:
+                        player_id = "unknown_player"
                     new_player = Player.objects.create(
-                        external_id=event_json['player_id'],
+                        external_id=player_id,
                         team=team,
                         common_name=shortened_name,
                         first_name=first_name,
