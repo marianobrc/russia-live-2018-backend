@@ -372,8 +372,8 @@ class Command(BaseCommand):
                         update_match_events_from_json(match, events_json, is_simulation, simulation_delay)
                         stats_json = match_json['stats']['data']
                         update_match_statistics_from_json(match, stats_json)
-                        lineups_json = match_json['lineup']['data']
-                        update_match_lineups_from_json(match, lineups_json)
+                        #lineups_json = match_json['lineup']['data']
+                        #update_match_lineups_from_json(match, lineups_json)
                     except Exception as e:
                         print("ERROR UPDATING MATCH: %s" % e)
                         sleep(1)
