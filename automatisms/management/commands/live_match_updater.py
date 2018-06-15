@@ -85,7 +85,7 @@ def update_match_statistics_from_json(match, stats_json):
 
 
 def get_event_type(api_event_type):
-    if api_event_type == "goal":
+    if api_event_type == "goal" or api_event_type == "penalty":
         return "goal"
     elif api_event_type == "substitution":
         return "player_change"
