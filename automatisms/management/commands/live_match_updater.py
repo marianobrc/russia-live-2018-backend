@@ -55,17 +55,20 @@ def update_match_statistics_from_json(match, stats_json):
             except MatchStats.DoesNotExist:
                 team_stats = MatchStats(match=match, team=team)
             finally:
-                team_stats.possession = stat['possessiontime'] if stat['possessiontime'] is not None else 50
-                team_stats.passes = stat['passes']['total'] if stat['passes'] is not None and stat['passes']['total'] is not None else 0
-                team_stats.passes_accuracy = stat['passes']['percentage'] if stat['passes']['percentage'] is not None else 100
-                team_stats.shots_total = stat['shots']['total'] if stat['shots']['total'] is not None else 0
-                team_stats.shots_ongoal = stat['shots']['ongoal'] if stat['shots']['ongoal'] is not None else 0
-                if int(stat['shots']['total']) > 0:
-                    shots_accuracy = round((float(stat['shots']['ongoal']) / float(stat['shots']['total'])) * 100.0)
-                else:
-                    shots_accuracy = 100
-                team_stats.shots_accuracy = shots_accuracy
-                team_stats.dangerous_attacks = stat['attacks']['dangerous_attacks'] if stat['attacks']['dangerous_attacks'] is not None else 0
+                team_stats.possession = stat['possessiontime'] if stat['possessiontime'] is not None else 0
+                if stat['passes'] is not None:
+                    team_stats.passes = stat['passes']['total'] if stat['passes']['total'] is not None else 0
+                    team_stats.passes_accuracy = stat['passes']['percentage'] if stat['passes']['percentage'] is not None else 0
+                if stat['shots'] is not None:
+                    team_stats.shots_total = stat['shots']['total'] if stat['shots']['total'] is not None else 0
+                    team_stats.shots_ongoal = stat['shots']['ongoal'] if stat['shots']['ongoal'] is not None else 0
+                    if int(stat['shots']['total']) > 0:
+                        shots_accuracy = round((float(stat['shots']['ongoal']) / float(stat['shots']['total'])) * 100.0)
+                    else:
+                        shots_accuracy = 0
+                    team_stats.shots_accuracy = shots_accuracy
+                if stat['attacks'] is not None:
+                    team_stats.dangerous_attacks = stat['attacks']['dangerous_attacks'] if stat['attacks']['dangerous_attacks'] is not None else 0
                 team_stats.courner_kicks = stat['corners'] if stat['corners'] is not None else 0
                 team_stats.free_kicks = stat['free_kick'] if stat['free_kick'] is not None else 0
                 team_stats.yellow_cards = stat['yellowcards'] if stat['yellowcards'] is not None else 0
@@ -395,11 +398,18 @@ class Command(BaseCommand):
                     exit(1)
                 # Iterate all live matches
                 for match_json in live_matches_json:
+
                     try:
                         ext_match_id = match_json['id']
+                        if match_id != 'all' and int(ext_match_id) != int(match_id):
+                            print("Match with ID %s skipped.." % ext_match_id)
+                            continue
                         match = Match.objects.get(external_id=ext_match_id)
                     except Match.DoesNotExist:
-                        print("Match with ID %s not found (Skipped)" % match_id)
+                        print("Match with ID %s not found (Skipped)" % ext_match_id)
+                        continue
+                    except Exception as e:
+                        print("Error updating Match with ID %s (Skipped): \n %s" % (ext_match_id, e))
                         continue
 
                     if set_live:
