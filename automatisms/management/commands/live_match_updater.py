@@ -166,7 +166,7 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
             new_event.event_type = event_type
 
             # Notify goals ASAP, then continue processign event details
-            if event_type == 'goal' and match.status != Match.FINISHED:
+            if event_type == 'goal' and (match.status != Match.FINISHED or is_simulation):
                 team_scores = event_json['result']
                 team1_score = team_scores[0]
                 team2_score = team_scores[2]
@@ -305,7 +305,7 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
                     old_event.description2 = player_out_name
                 else:
                     old_event.description2 = ""
-
+                old_event.player = player
                 old_event.save()
                 print("Old event updated:  %s" % old_event)
         except Exception as e:
