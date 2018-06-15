@@ -167,9 +167,12 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
 
             # Notify goals ASAP, then continue processign event details
             if event_type == 'goal' and match.status != Match.FINISHED:
+                team_scores = event_json['result']
+                team1_score = team_scores[0]
+                team2_score = team_scores[2]
                 title = "Goal! {}".format(new_event.team.country.code_iso3.upper())
-                message = "{} {} - {} {}".format(match.team1.country.code_iso3.upper(), match.team1_score,
-                                                 match.team2_score, match.team2.country.code_iso3.upper())
+                message = "{} {} - {} {}".format(match.team1.country.code_iso3.upper(), team1_score,
+                                                 team2_score, match.team2.country.code_iso3.upper())
                 send_push_message_broadcast(token_list=device_tokens, title=title, message=message)
 
             event_minute = event_json['minute']
@@ -299,9 +302,10 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
                                 player_out_name = player_out_name[: 11] + ".."
                     except Exception as e:
                         player_out_name = player_splited_fullname[: 11] + ".."
+                    old_event.description2 = player_out_name
                 else:
-                    player_out_name = ""
-                old_event.description2 = player_out_name
+                    old_event.description2 = ""
+
                 old_event.save()
                 print("Old event updated:  %s" % old_event)
         except Exception as e:
