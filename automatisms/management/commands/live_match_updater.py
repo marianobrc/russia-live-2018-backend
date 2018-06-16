@@ -314,9 +314,9 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
                         player_out_name = player_splited_fullname[: 11] + ".."
                     finally:
                         old_event.description2 = player_out_name
-                elif event_type == 'penalty_goal':
+                elif old_event.event_type == 'penalty_goal':
                     old_event.description2 = "Penalty Goal."
-                elif event_type == 'penalty_missed':
+                elif old_event.event_type == 'penalty_missed':
                     old_event.description2 = "Penalty Missed."
                 else:
                     old_event.description2 = ""
