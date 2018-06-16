@@ -259,9 +259,9 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
                 print("Error updating event %s (skipped): \n%s" % (event_json, e))
                 continue
             else:
-                # Only the player is updated and is updated if the id exists
-                if event_json['player_id'] is None:
-                    print("No player id updating event %s (skipped): \n%s" % (event_json, e))
+                # Only the player is updated and is updated if the id exists and is diferent from current
+                if event_json['player_id'] is None or event_json['player_id'] == old_event.player.external_id:
+                    print("No new player id updating event %s (skipped): \n%s" % (event_json, e))
                     continue
                 try:
                     player = Player.objects.get(external_id=event_json['player_id'])
