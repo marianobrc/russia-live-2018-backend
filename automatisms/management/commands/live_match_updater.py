@@ -260,7 +260,7 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
                 continue
             else:
                 # Only the player is updated and is updated if the id exists and is diferent from current
-                if event_json['player_id'] is None:
+                if event_json['player_id'] is None or old_event.player is not None:
                     print("No new player id updating event %s (skipped): \n%s" % (event_json, e))
                     continue
                 try:
