@@ -85,11 +85,11 @@ def update_match_statistics_from_json(match, stats_json):
 
 
 def get_event_type(api_event_type):
-    if api_event_type == "goal" or api_event_type == "own-goal" or api_event_type == "own_goal":
+    if api_event_type == "goal" or api_event_type == "penalty" or api_event_type == "own-goal" or api_event_type == "own_goal":
         return "goal"
-    if api_event_type == "penalty" or api_event_type == "pen_shootout_goal":
+    elif api_event_type == "pen_shootout_goal":
         return "penalty_goal"
-    if api_event_type == "missed_penalty" or api_event_type == "pen_shootout_miss":
+    elif api_event_type == "missed_penalty" or api_event_type == "pen_shootout_miss":
         return "penalty_missed"
     elif api_event_type == "substitution":
         return "player_change"
