@@ -148,9 +148,9 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
         new_event.description = "Finished"  # ToDo check when to use it
         new_event.description2 = ""
         new_event.save()
-        title = "Match ended"
-        message = "{} {} - {} {}".format(match.team1.country.code_iso3, match.team1_score,
-                                         match.team2_score, match.team2.country.code_iso3)
+        title = "Match finished"
+        message = "{} {} - {} {}".format(match.team1.country.code_iso3.upper(), match.team1_score,
+                                         match.team2_score, match.team2.country.code_iso3.upper())
         send_push_message_broadcast(token_list=device_tokens, title=title, message=message)
         print("Match %s ..FINISHED." % match)
         return
