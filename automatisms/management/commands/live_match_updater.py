@@ -100,6 +100,50 @@ def get_event_type(api_event_type):
     else:
         return "match_generic"
 
+# Sanity checks
+def verify_event_data_consistency(event_json):
+
+    try: # Get event ID that shouldn't be missing ever
+        event_id = event_json['id']
+    except Exception as e:
+        print("[verify_event_data_consistency]> ERROR getting event ID: \nEvent: %s \nError: %s" % (event_json, e))
+        return False
+
+    # Validate event ID is valid
+    if event_id is None:
+        print("[verify_event_data_consistency]> ERROR -> Event ID is None!")
+        return False
+
+    try: # Get event type
+        event_type = event_json['type']
+    except Exception as e:
+        print("[verify_event_data_consistency]> ERROR getting event type: \nEvent: %s \nError: %s" % (event_json, e))
+        return False
+
+    # Validate event type
+    if event_type is None:
+        print("[verify_event_data_consistency]> ERROR -> Event type is None!")
+        return False
+
+    # Get team id
+    try: # Get event type
+        team_id = event_json['team_id']
+    except Exception as e:
+        print("[verify_event_data_consistency]> ERROR getting team_id: \nEvent: %s \nError: %s" % (event_json, e))
+        return False
+
+    # Validate team id
+    if team_id is None:
+        print("[verify_event_data_consistency]> ERROR -> Team ID is None!")
+        return False
+
+    # All validations passed
+    return True
+
+
+
+
+
 
 def update_match_events_from_json(match, events_json, is_simulation=False, sim_time=0):
     print("Updating events of match %s .." % match)
@@ -160,9 +204,24 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
     new_events_json = sorted(new_events_json, key=lambda event: event['minute'])
     for event_json in new_events_json:
         try:
+            # IMPORTANT: Checks data sanity, cause the api use to return wrong or uncompleted data
+            if not verify_event_data_consistency(event_json):
+                print("ERROR: EVENT DATA INCONSISTENCY (Skipped):  %s" % event_json)
+                continue
+
             # First get event type
             event_type = get_event_type(api_event_type=event_json['type'])
-            team = match.team2 if event_json['team_id'] == match.team2.external_id else match.team1
+
+            # Validate team
+            if event_json['team_id'] == match.team2.external_id:
+                team = match.team2
+            elif event_json['team_id'] == match.team1.external_id:
+                team = match.team1
+            else:
+                print("ERROR: EVENT TEAM DOESN'T MATCH, (Skipped):\n  %s" % event_json)
+                continue
+
+
             new_event = MatchEvent()
             new_event.external_id = event_json['id']
             new_event.match = match
@@ -259,46 +318,69 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
                 print("Error updating event %s (skipped): \n%s" % (event_json, e))
                 continue
             else:
-                # Only the player is updated and is updated if the id exists and is diferent from current
-                if event_json['player_id'] is None or old_event.player is not None:
-                    print("No new player id updating event %s (skipped)" % event_json)
+                # Consistency checks
+                if not verify_event_data_consistency(event_json):
+                    print("UPDATE ERROR: EVENT DATA INCONSISTENCY (Skipped):  %s" % event_json)
                     continue
-                try:
-                    player = Player.objects.get(external_id=event_json['player_id'])
-                except Exception:
-                    if event_json['player_name'] is not None:  # Is a new player
-                        print("Creating missing player: %s" % event_json['player_name'] )
-                        # Make player with avalilable data
-                        first_name = event_json['firstname']
-                        if first_name is None or first_name == "":
-                            first_name = event_json['common_name'].split()[0]
-                        surname = event_json['lastname']
-                        if surname is None or surname == "":
-                            surname = event_json['common_name'].split()[1]
-                        common_name = event_json['common_name']
-                        if len(common_name) > 14:  # Shorten names
-                            very_first_name = first_name.split(' ')[0][0]  # First letter of first name
-                            common_name = very_first_name + ". " + surname  # J. Masscheranno
-                            if len(common_name) > 14:  # Use only surname
-                                common_name = surname  # Masscheranno
-                            if len(common_name) > 14:  # Abreviate
-                                common_name = common_name[:12] + ".."  # Masscheran..
-                        # Create the new player
-                        player_id = event_json['player_id']
-                        if player_id is None:
-                            player_id = "unknown_player"
-                        new_player = Player.objects.create(
-                            external_id=player_id,
-                            team=team,
-                            common_name=common_name,
-                            first_name=first_name,
-                            last_name=surname,
-                            nationality=team.country,  # All players must be from the team's country in this worldcup
-                            position=event_json['position_id'],
-                        )
-                        old_event.player = new_player
-                    else:  # No player info yet, will be updated later
-                        pass # Player is updated only if there is a new one
+
+                # Update event type if has changed
+                new_event_type = get_event_type(api_event_type=event_json['type'])
+                if event_json['type'] is not None and new_event_type != old_event.event_type:
+                    old_event.event_type =  new_event_type
+                    print("Old event type updated [%s] -> %s" % (old_event, old_event.event_type))
+
+                # Update event time if has changed
+                event_minute = event_json['minute']
+                if event_minute is not None and int(event_minute) != int(old_event.minute):
+                    old_event.minute = int(event_minute)
+                    if event_json['extra_minute'] is not None:
+                        old_event.minute += int(event_json['extra_minute'])
+                    old_event.extra_minute = 0  # deprecated
+                    print("Old event time updated [%s] -> %s" % (old_event, old_event.minute))
+
+                # The player is updated if the id exists and if is diferent from current
+                if (old_event.player is None and event_json['player_id'] is not None) or\
+                        (old_event.player is not None and event_json['player_id'] is not None and str(old_event.player.external_id) != str(event_json['player_id']) ):
+                    try:
+                        player = Player.objects.get(external_id=event_json['player_id'])
+                    except Exception:
+                        if event_json['player_name'] is not None:  # Is a new player
+                            print("Creating missing player: %s" % event_json['player_name'] )
+                            # Make player with avalilable data
+                            first_name = event_json['firstname']
+                            if first_name is None or first_name == "":
+                                first_name = event_json['common_name'].split()[0]
+                            surname = event_json['lastname']
+                            if surname is None or surname == "":
+                                surname = event_json['common_name'].split()[1]
+                            common_name = event_json['common_name']
+                            if len(common_name) > 14:  # Shorten names
+                                very_first_name = first_name.split(' ')[0][0]  # First letter of first name
+                                common_name = very_first_name + ". " + surname  # J. Masscheranno
+                                if len(common_name) > 14:  # Use only surname
+                                    common_name = surname  # Masscheranno
+                                if len(common_name) > 14:  # Abreviate
+                                    common_name = common_name[:12] + ".."  # Masscheran..
+                            # Create the new player
+                            player_id = event_json['player_id']
+                            if player_id is None:
+                                player_id = "unknown_player"
+                            new_player = Player.objects.create(
+                                external_id=player_id,
+                                team=team,
+                                common_name=common_name,
+                                first_name=first_name,
+                                last_name=surname,
+                                nationality=team.country,  # All players must be from the team's country in this worldcup
+                                position=event_json['position_id'],
+                            )
+                            old_event.player = new_player
+                            print("Old event NEW player updated -> %s" % old_event)
+                    else: # No exception, then player was found
+                        old_event.player = player
+                        print("Old event player updated [%s] -> %s" % (old_event, old_event.player))
+
+                # Update description
                 old_event.description = ""  # ToDo check when to use it
                 if old_event.event_type == 'player_change':
                     try:
@@ -320,9 +402,10 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
                     old_event.description2 = "Penalty Missed."
                 else:
                     old_event.description2 = ""
-                old_event.player = player
+
+                # Finally save event
                 old_event.save()
-                print("Old event updated:  %s" % old_event)
+
         except Exception as e:
             print("ERROR Updating event (skipped): %s " % e)
             continue
