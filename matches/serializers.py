@@ -40,7 +40,7 @@ class MatchDetailSerializer(serializers.ModelSerializer):
     stats = serializers.SerializerMethodField()
 
     def get_events(self, obj): # Return last event first
-         ordered_queryset = obj.events.all().order_by('-minute')
+         ordered_queryset = obj.events.all().order_by('-minute', 'id')
          return MatchEventSerializer(ordered_queryset, many=True, read_only=True, context=self.context).data
 
     def get_stats(self, obj): # Return last event first
