@@ -17,8 +17,8 @@ def update_match_lineups_from_json(match, lineups_json):
     # Team 1 is always local and Team 2 is always visitor
     team1_id = int(match.team1.external_id)
     team2_id = int(match.team2.external_id)
-    team1_players = [('%4s' % p['number']) + ('. %s' % p['player_name']) for p in lineups_json if p['team_id'] == team1_id]
-    team2_players = [('%4s' % p['number']) + ('. %s' % p['player_name']) for p in lineups_json if p['team_id'] == team2_id]
+    team1_players = [('%4s' % p['number']) + ('. %s' % p['player_name']) for p in lineups_json if p['number'] is not None and p['team_id'] == team1_id]
+    team2_players = [('%4s' % p['number']) + ('. %s' % p['player_name']) for p in lineups_json if p['number'] is not None and p['team_id'] == team2_id]
     if len(team1_players) > 0:
         match.team1_lineup = team1_players
     if len(team2_players) > 0:
