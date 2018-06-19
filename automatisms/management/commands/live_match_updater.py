@@ -342,6 +342,19 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
                         old_event.minute += int(event_json['extra_minute'])
                     old_event.extra_minute = 0  # deprecated
 
+                # Update team if has changed
+                if old_event.team is not None and event_json['team_id'] is not None and str(old_event.team.external_id) != str(event_json['team_id']):
+                    print("Old event team updated [%s] -> %s" % (old_event, event_json['team_id']))
+                    if event_json['team_id'] == match.team2.external_id:
+                        new_team = match.team2
+                        old_event.team = new_team
+                    elif event_json['team_id'] == match.team1.external_id:
+                        new_team = match.team1
+                        old_event.team = new_team
+                    else:
+                        print("ERROR: EVENT TEAM DOESN'T MATCH, (Skipped):\n  %s" % event_json)
+                        pass
+
 
                 # The player is updated if the id exists and if is diferent from current
                 if (old_event.player is None and event_json['player_id'] is not None) or\
