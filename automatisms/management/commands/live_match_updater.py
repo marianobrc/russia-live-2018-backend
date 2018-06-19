@@ -209,6 +209,9 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
                 print("ERROR: EVENT DATA INCONSISTENCY (Skipped):  %s" % event_json)
                 continue
 
+            # LOG NEW EVENT FOR DEBUGG
+            print("NEW EVENT REVEIVED:\n %s" % event_json)
+
             # First get event type
             event_type = get_event_type(api_event_type=event_json['type'])
 
@@ -312,6 +315,7 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
     old_events_json = sorted(old_events_json, key=lambda event: event['minute'])
     for event_json in old_events_json:
         try:
+            print("UPDATE EVENT REVEIVED:\n %s" % event_json)
             try:
                 old_event = MatchEvent.objects.get(external_id=event_json['id'])
             except Exception as e:
@@ -326,17 +330,18 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
                 # Update event type if has changed
                 new_event_type = get_event_type(api_event_type=event_json['type'])
                 if event_json['type'] is not None and new_event_type != old_event.event_type:
+                    print("Old event type updated [%s] -> %s" % (old_event, new_event_type))
                     old_event.event_type =  new_event_type
-                    print("Old event type updated [%s] -> %s" % (old_event, old_event.event_type))
 
                 # Update event time if has changed
                 event_minute = event_json['minute']
                 if event_minute is not None and int(event_minute) != int(old_event.minute):
+                    print("Old event time updated [%s] -> %s" % (old_event, event_minute))
                     old_event.minute = int(event_minute)
                     if event_json['extra_minute'] is not None:
                         old_event.minute += int(event_json['extra_minute'])
                     old_event.extra_minute = 0  # deprecated
-                    print("Old event time updated [%s] -> %s" % (old_event, old_event.minute))
+
 
                 # The player is updated if the id exists and if is diferent from current
                 if (old_event.player is None and event_json['player_id'] is not None) or\
