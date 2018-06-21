@@ -332,6 +332,17 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
                 if event_json['type'] is not None and new_event_type != old_event.event_type:
                     print("Old event type updated [%s] -> %s" % (old_event, new_event_type))
                     old_event.event_type =  new_event_type
+                    old_event.save()
+                    # Notify goals -> WORKAROUND FOR API ISSUE WITH PENALTIES
+                    if (new_event_type == 'goal') or (new_event_type == 'penalty_goal') and (
+                            match.status != Match.FINISHED or is_simulation):
+                        team_scores = event_json['result']
+                        team1_score = team_scores[0]
+                        team2_score = team_scores[2]
+                        title = "Goal! {}".format(old_event.team.country.code_iso3.upper())
+                        message = "{} {} - {} {}".format(match.team1.country.code_iso3.upper(), team1_score,
+                                                         team2_score, match.team2.country.code_iso3.upper())
+                        send_push_message_broadcast(token_list=device_tokens, title=title, message=message)
 
                 # Update event time if has changed
                 event_minute = event_json['minute']
