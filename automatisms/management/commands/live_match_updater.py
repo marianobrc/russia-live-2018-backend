@@ -12,7 +12,7 @@ API_KEY = "gr33lj1tRZanPATeL1U82l8jVxDxYgenfU9fw2cUI446LEFodUovnCn1skAD"
 total_requests = 0
 
 
-def get_match_status(api_match_status, timer):
+def get_match_status(api_match_status):
     if api_match_status == "LIVE":
         return Match.PLAYING_FT
     elif api_match_status == "FT":
@@ -28,10 +28,13 @@ def get_match_status(api_match_status, timer):
 def update_match_status_from_json(match, match_json):
     print("Updating score of match %s .." % match)
     # Team 1 is always local and Team 2 is always visitor
-    match_minute = match_json['time']['minute']
-    match.status = get_match_status(api_match_status=match_json['time']['status'], timer=match_minute)
-    if match_minute is not None and match_minute != "":
+    match_minute_json = match_json['time']['minute']
+    if match_minute_json is not None and match_minute_json != "":
+        match_minute = int(match_minute_json)
+        if match_json['time']['extra_minute'] is not None:
+            match_minute += int(match_json['time']['extra_minute'])
         match.minutes = match_minute  # In extra time a plus sign appears
+    match.status = get_match_status(api_match_status=match_json['time']['status'])
     match.team1_score = match_json['scores']['localteam_score']
     match.team2_score = match_json['scores']['visitorteam_score']
     match.save()
