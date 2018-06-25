@@ -100,6 +100,8 @@ def get_event_type(api_event_type):
         return "yellow_card"
     elif api_event_type == "redcard":
         return "red_card"
+    elif api_event_type == "yellowred":
+        return "yellow_red_card"
     else:
         return "match_generic"
 
