@@ -32,7 +32,7 @@ class Standing(models.Model):
     drawn = models.PositiveIntegerField(default=0)
     lost = models.PositiveIntegerField(default=0)
     goal_difference = models.IntegerField(default=0)
-    points = models.PositiveIntegerField(default=0)
+    points = models.CharField(max_length=3, default="-", blank=True)
     is_playing = models.BooleanField(default=False)  # There is a match on course that can affect this standing
 
     class Meta:
