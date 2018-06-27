@@ -245,6 +245,7 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
                 message = "{} {} - {} {}".format(match.team1.country.code_iso3.upper(), team1_score,
                                                  team2_score, match.team2.country.code_iso3.upper())
                 send_push_message_broadcast(token_list=device_tokens, title=title, message=message)
+                new_event.is_notified = True
 
             event_minute = event_json['minute']
             new_event.minute = int(event_minute) if event_minute is not None else 0
@@ -341,13 +342,18 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
                     # Notify goals -> WORKAROUND FOR API ISSUE WITH PENALTIES
                     if (new_event_type == 'goal') or (new_event_type == 'penalty_goal') and (
                             match.status != Match.FINISHED or is_simulation):
-                        team_scores = event_json['result']
-                        team1_score = team_scores[0]
-                        team2_score = team_scores[2]
-                        title = "Goal! {}".format(old_event.team.country.code_iso3.upper())
-                        message = "{} {} - {} {}".format(match.team1.country.code_iso3.upper(), team1_score,
-                                                         team2_score, match.team2.country.code_iso3.upper())
-                        send_push_message_broadcast(token_list=device_tokens, title=title, message=message)
+                        if not old_event.is_notified: # Avoid duplicate notifications
+                            team_scores = event_json['result']
+                            team1_score = team_scores[0]
+                            team2_score = team_scores[2]
+                            title = "Goal! {}".format(old_event.team.country.code_iso3.upper())
+                            message = "{} {} - {} {}".format(match.team1.country.code_iso3.upper(), team1_score,
+                                                             team2_score, match.team2.country.code_iso3.upper())
+                            send_push_message_broadcast(token_list=device_tokens, title=title, message=message)
+                            old_event.is_notified = True
+                            old_event.save()
+                        else:
+                            print(">>>>>>>>>> WARNING: Double notifiation attempted and SKIPPED for event %s" % old_event)
 
                 # Update event time if has changed
                 event_minute = event_json['minute']
