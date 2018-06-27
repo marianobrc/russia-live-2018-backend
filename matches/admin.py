@@ -21,6 +21,7 @@ class MatchEventAdmin(admin.ModelAdmin):
     list_filter = (
         'match',
         'event_type',
+        'is_notified'
     )
 
 

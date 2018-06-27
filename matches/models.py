@@ -53,9 +53,10 @@ class MatchEvent(models.Model):
     player = models.ForeignKey(Player, on_delete=models.CASCADE, null=True, blank=True)
     description = models.CharField(max_length=255, blank=True)
     description2 = models.CharField(max_length=255, blank=True)
+    is_notified = models.BooleanField(default=False)
 
     def __str__(self):
-        return "{} {} {}".format(self.minute, self.event_type, self.player)
+        return "{} {} {} - notified -> {}".format(self.minute, self.event_type, self.player, self.is_notified)
 
 
 class MatchStats(models.Model):
