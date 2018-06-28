@@ -244,6 +244,7 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
                 title = "Goal! {}".format(new_event.team.country.code_iso3.upper())
                 message = "{} {} - {} {}".format(match.team1.country.code_iso3.upper(), team1_score,
                                                  team2_score, match.team2.country.code_iso3.upper())
+                print(">>>>>>>>>> SENDING GOAL NOTIFICATION FOR NEW EVENT: %s %s" % (title, message))
                 send_push_message_broadcast(token_list=device_tokens, title=title, message=message)
                 new_event.is_notified = True
 
@@ -349,6 +350,7 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
                             title = "Goal! {}".format(old_event.team.country.code_iso3.upper())
                             message = "{} {} - {} {}".format(match.team1.country.code_iso3.upper(), team1_score,
                                                              team2_score, match.team2.country.code_iso3.upper())
+                            print(">>>>>>>>>> SENDING GOAL NOTIFICATION FOR OLD EVENT: %s %s" % (title, message))
                             send_push_message_broadcast(token_list=device_tokens, title=title, message=message)
                             old_event.is_notified = True
                             old_event.save()
