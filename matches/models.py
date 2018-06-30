@@ -15,12 +15,16 @@ class Match(models.Model):
     PLAYING_FT = 'FT'  # First Time
     HALFTIME = 'HT'  # Half Time
     PLAYING_ST = 'ST'  # Second Time
+    EXTRA_TIME = 'ET'
+    PENALTIES = 'PN'
     FINISHED = 'FN'  # Finished
     MATCH_STATUSES = (
         (NOT_STARTED, 'Not started yet'),
         (PLAYING_FT,   'Playing First Time'),
         (HALFTIME,  'Half Time'),
         (PLAYING_ST, 'Playing Second Time'),
+        (EXTRA_TIME, 'Playing Extra Time'),
+        (PENALTIES, 'Playing Penalties Definition'),
         (FINISHED,  'Finished'),
     )
     status = models.CharField(max_length=20, choices=MATCH_STATUSES, default=NOT_STARTED)

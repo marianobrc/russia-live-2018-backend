@@ -13,9 +13,13 @@ total_requests = 0
 
 
 def get_match_status(api_match_status):
-    if api_match_status == "LIVE":
+    if api_match_status == "LIVE" or api_match_status == "BREAK":
         return Match.PLAYING_FT
-    elif api_match_status == "FT":
+    elif api_match_status == "ET":
+        return Match.EXTRA_TIME
+    elif api_match_status == "PEN_LIVE":
+        return Match.PENALTIES
+    elif api_match_status == "FT" or api_match_status == "AET" or api_match_status == "FT_PEN":
         return Match.FINISHED
     elif api_match_status == "HT":
         return Match.HALFTIME
@@ -186,13 +190,55 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
     #                                      match.team2_score, match.team2.country.code_iso3)
         #send_push_message_broadcast(token_list=device_tokens, title=title, message=message)
         #return # Don't update more events during half-time
+    elif match.status == Match.EXTRA_TIME and MatchEvent.objects.filter(
+            match=match,
+            event_type='extra_time'
+    ).count() == 0:
+        new_event = MatchEvent()
+        new_event.external_id = '-1'
+        new_event.match = match
+        new_event.team = match.team2
+        new_event.event_type = 'extra_time'
+        new_event.minute = 98
+        new_event.extra_minute = 0
+        new_event.description = "Extra time started"
+        new_event.description2 = ""
+        new_event.save()
+        title = "Extra Time"
+        message = "{} - {}".format(match.team1.country.code_iso3.upper(), match.team2.country.code_iso3.upper())
+        send_push_message_broadcast(token_list=device_tokens, title=title, message=message)
+        new_event.is_notified = True
+        new_event.save()
+        print("Match %s ..Extra time definition." % match)
+        return
+    elif match.status == Match.PENALTIES and MatchEvent.objects.filter(
+            match=match,
+            event_type='penalties_definition'
+    ).count() == 0:
+        new_event = MatchEvent()
+        new_event.external_id = '-1'
+        new_event.match = match
+        new_event.team = match.team2
+        new_event.event_type = 'penalties_definition'
+        new_event.minute = 120  # ToDo: check how to handle minutes in half time
+        new_event.extra_minute = 0
+        new_event.description = ""  # ToDo check when to use it
+        new_event.description2 = ""
+        new_event.save()
+        title = "Penalties Definition"
+        message = "{} - {}".format(match.team1.country.code_iso3.upper(), match.team2.country.code_iso3.upper())
+        send_push_message_broadcast(token_list=device_tokens, title=title, message=message)
+        new_event.is_notified = True
+        new_event.save()
+        print("Match %s ..Penalties Started." % match)
+        return
     elif match.status == Match.FINISHED and MatchEvent.objects.filter(match=match, event_type='match_finished').count() == 0:
         new_event = MatchEvent()
         new_event.external_id = '-1'
         new_event.match = match
         new_event.team = match.team2
         new_event.event_type = 'match_finished'
-        new_event.minute = 100  # ToDo: check how to handle minutes in half time
+        new_event.minute = 200  # ToDo: check how to handle minutes in half time
         new_event.extra_minute = 0
         new_event.description = "Finished"  # ToDo check when to use it
         new_event.description2 = ""
@@ -201,6 +247,8 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
         message = "{} {} - {} {}".format(match.team1.country.code_iso3.upper(), match.team1_score,
                                          match.team2_score, match.team2.country.code_iso3.upper())
         send_push_message_broadcast(token_list=device_tokens, title=title, message=message)
+        new_event.is_notified = True
+        new_event.save()
         print("Match %s ..FINISHED." % match)
         return
 
