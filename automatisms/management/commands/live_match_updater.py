@@ -303,6 +303,8 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
 
             event_minute = event_json['minute']
             new_event.minute = int(event_minute) if event_minute is not None else 0
+            if match.status == Match.PENALTIES:
+                new_event.minute += 120
             if event_json['extra_minute'] is not None:
                 new_event.minute += int(event_json['extra_minute'])
             new_event.extra_minute = 0 # deprecated
