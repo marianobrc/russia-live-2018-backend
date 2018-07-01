@@ -432,11 +432,14 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
 
                 # Update event time if has changed
                 event_minute = event_json['minute']
-                if event_minute is not None and int(event_minute) != int(old_event.minute):
+                new_time = int(event_minute)
+                if event_json['extra_minute'] is not None:
+                    new_time += int(event_json['extra_minute'])
+                if match.status == Match.PENALTIES:
+                    new_time += 120
+                if event_minute is not None and new_time != int(old_event.minute):
                     print("Old event time updated [%s] -> %s" % (old_event, event_minute))
                     old_event.minute = int(event_minute)
-                    if event_json['extra_minute'] is not None:
-                        old_event.minute += int(event_json['extra_minute'])
                     old_event.extra_minute = 0  # deprecated
                     old_event.save()
 
