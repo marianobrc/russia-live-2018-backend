@@ -41,6 +41,9 @@ def update_match_status_from_json(match, match_json):
     match.status = get_match_status(api_match_status=match_json['time']['status'])
     match.team1_score = match_json['scores']['localteam_score']
     match.team2_score = match_json['scores']['visitorteam_score']
+    if match.status == Match.PENALTIES:
+        match.localteam_pen_score =  match_json['scores']['localteam_pen_score']
+        match.team2_score = match_json['scores']['visitorteam_pen_score']
     match.save()
     print("Updating score of match %s ..DONE" % match)
     return match
