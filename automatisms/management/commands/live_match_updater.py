@@ -12,15 +12,27 @@ API_KEY = "gr33lj1tRZanPATeL1U82l8jVxDxYgenfU9fw2cUI446LEFodUovnCn1skAD"
 total_requests = 0
 
 
-def get_match_status(api_match_status):
+def get_match_status(api_match_scores, api_match_status):
     if api_match_status == "LIVE" or api_match_status == "BREAK":
         return Match.PLAYING_FT
     elif api_match_status == "ET":
         return Match.EXTRA_TIME
     elif api_match_status == "PEN_LIVE":
         return Match.PENALTIES
-    elif api_match_status == "FT" or api_match_status == "AET" or api_match_status == "FT_PEN":
-        return Match.FINISHED
+    elif api_match_status == "FT":
+        # Check if scores are equal, then the match haven't finished
+        if api_match_scores['localteam_score'] != api_match_scores['visitorteam_score']:
+            return Match.FINISHED
+        else:
+            return Match.PLAYING_FT
+    elif api_match_status == "AET":
+        # Check if scores are equal, then the match haven't finished
+        if api_match_scores['localteam_score'] != api_match_scores['visitorteam_score']:
+            return Match.FINISHED
+        else:
+            return Match.EXTRA_TIME # Don't send the finish event until after penalties
+    elif api_match_status == "FT_PEN":
+        return Match.FINISHED # When penalties finished, then the match finished
     elif api_match_status == "HT":
         return Match.HALFTIME
     elif api_match_status == "NS":
@@ -38,7 +50,7 @@ def update_match_status_from_json(match, match_json):
         if match_json['time']['extra_minute'] is not None:
             match_minute += int(match_json['time']['extra_minute'])
         match.minutes = match_minute  # In extra time a plus sign appears
-    match.status = get_match_status(api_match_status=match_json['time']['status'])
+    match.status = get_match_status(api_match_scores=match_json['scores'], api_match_status=match_json['time']['status'])
     if match.status == Match.PENALTIES:
         match.is_penalty_definition = True
         match.localteam_pen_score =  match_json['scores']['localteam_pen_score']
@@ -225,9 +237,9 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
         new_event.match = match
         new_event.team = match.team2
         new_event.event_type = 'penalties_definition'
-        new_event.minute = 120  # ToDo: check how to handle minutes in half time
+        new_event.minute = 120
         new_event.extra_minute = 0
-        new_event.description = ""  # ToDo check when to use it
+        new_event.description = ""
         new_event.description2 = ""
         new_event.save()
         title = "Penalties Definition"
@@ -249,8 +261,14 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
         new_event.description2 = ""
         new_event.save()
         title = "Match finished"
-        message = "{} {} - {} {}".format(match.team1.country.code_iso3.upper(), match.team1_score,
-                                         match.team2_score, match.team2.country.code_iso3.upper())
+        if match.is_penalty_definition:
+            message = "{} {}({}) - ({}){} {}".format(
+                match.team1.country.code_iso3.upper(), match.team1_score, match.team1_penalties_score,
+                match.team2_penalties_score, match.team2_score, match.team2.country.code_iso3.upper()
+            )
+        else:
+            message = "{} {} - {} {}".format(match.team1.country.code_iso3.upper(), match.team1_score,
+                                             match.team2_score, match.team2.country.code_iso3.upper())
         send_push_message_broadcast(token_list=device_tokens, title=title, message=message)
         new_event.is_notified = True
         new_event.save()
@@ -290,7 +308,7 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
             new_event.event_type = event_type
 
             # Notify goals ASAP, then continue processign event details
-            if (event_type == 'goal') or (event_type == 'penalty_goal') and (match.status != Match.FINISHED or is_simulation):
+            if (event_type == 'goal') and (match.status != Match.FINISHED or is_simulation):
                 team_scores = event_json['result']
                 team1_score = team_scores[0]
                 team2_score = team_scores[2]
