@@ -415,8 +415,7 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
                     old_event.event_type =  new_event_type
                     old_event.save()
                     # Notify goals -> WORKAROUND FOR API ISSUE WITH PENALTIES
-                    if (new_event_type == 'goal') or (new_event_type == 'penalty_goal') and (
-                            match.status != Match.FINISHED or is_simulation):
+                    if (new_event_type == 'goal') and (match.status != Match.FINISHED or is_simulation):
                         if not old_event.is_notified: # Avoid duplicate notifications
                             team_scores = event_json['result']
                             team1_score = team_scores[0]
