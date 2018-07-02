@@ -56,7 +56,7 @@ def update_match_status_from_json(match, match_json):
     if match.is_penalty_definition:
         match.team1_penalties_score =  match_json['scores']['localteam_pen_score']
         match.team2_penalties_score = match_json['scores']['visitorteam_pen_score']
-    else: # During the game
+    elif match.status == Match.PLAYING_FT: # During the game
         match.team1_score = match_json['scores']['localteam_score']
         match.team2_score = match_json['scores']['visitorteam_score']
     match.save()
@@ -322,7 +322,7 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
 
             event_minute = event_json['minute']
             new_event.minute = int(event_minute) if event_minute is not None else 0
-            if match.status == Match.PENALTIES:
+            if event_type == 'penalty_goal' or event_type == 'penalty_missed':
                 new_event.minute += 120
             if event_json['extra_minute'] is not None:
                 new_event.minute += int(event_json['extra_minute'])
@@ -436,7 +436,7 @@ def update_match_events_from_json(match, events_json, is_simulation=False, sim_t
                 new_time = int(event_minute)
                 if event_json['extra_minute'] is not None:
                     new_time += int(event_json['extra_minute'])
-                if match.status == Match.PENALTIES:
+                if event_type == 'penalty_goal' or event_type == 'penalty_missed':
                     new_time += 120
                 if event_minute is not None and new_time != int(old_event.minute):
                     print("Old event time updated [%s] -> %s" % (old_event, event_minute))
