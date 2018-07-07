@@ -56,7 +56,7 @@ def update_match_status_from_json(match, match_json):
     if match.is_penalty_definition:
         match.team1_penalties_score =  match_json['scores']['localteam_pen_score']
         match.team2_penalties_score = match_json['scores']['visitorteam_pen_score']
-    elif match.status == Match.PLAYING_FT: # During the game
+    elif match.status == Match.PLAYING_FT or Match.EXTRA_TIME: # During the game
         match.team1_score = match_json['scores']['localteam_score']
         match.team2_score = match_json['scores']['visitorteam_score']
     match.save()
